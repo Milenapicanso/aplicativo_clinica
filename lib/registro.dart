@@ -141,6 +141,7 @@ class _RegisterAccessScreenState extends State<RegisterAccessScreen> {
       ).showSnackBar(const SnackBar(content: Text('As senhas não coincidem.')));
       return;
     }
+
     widget.onFinish?.call(
       _email.text.trim(),
       _phone.text.trim(),
@@ -152,7 +153,10 @@ class _RegisterAccessScreenState extends State<RegisterAccessScreen> {
   Widget build(BuildContext context) {
     return AuthScaffold(
       onBack: widget.onBack,
-      footer: AuthPrimaryButton(label: 'Concluir', onPressed: _finish),
+      footer: AuthPrimaryButton(
+        label: 'Concluir',
+        onPressed: _finish,
+      ),
       children: [
         const SizedBox(height: 8),
         const StepProgress(step: 2),

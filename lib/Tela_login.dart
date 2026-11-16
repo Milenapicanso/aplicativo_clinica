@@ -82,7 +82,8 @@ class _LoginScreenState extends State<LoginScreen> {
         const SizedBox(height: 34),
         AuthPrimaryButton(
           label: 'Entrar',
-          onPressed: () => widget.onSubmit?.call(_email.text.trim(), _password.text),
+          onPressed: () =>
+              widget.onSubmit?.call(_email.text.trim(), _password.text),
         ),
         const SizedBox(height: 28),
         _OrDivider(),

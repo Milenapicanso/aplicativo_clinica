@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'Tela_login.dart';
 import 'registro.dart';
@@ -10,8 +11,22 @@ import 'doctor_reviews_screen.dart';
 import 'search_results_screen.dart';
 import 'specialty_screen.dart';
 import 'main_shell.dart';
+import 'supabase_config.dart';
 
-void main() => runApp(const AppAgendamento());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  if (!SupabaseConfig.configurado) {
+    throw StateError('Configure a URL e a chave pública do Supabase.');
+  }
+
+  await Supabase.initialize(
+    url: SupabaseConfig.url,
+    anonKey: SupabaseConfig.anonKey,
+  );
+
+  runApp(const AppAgendamento());
+}
 
 class AppAgendamento extends StatelessWidget {
   const AppAgendamento({super.key});
