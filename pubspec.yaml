@@ -1,0 +1,43 @@
+name: aplicativo_clinica
+description: "A new Flutter project."
+
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.13.5
+
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  
+  cupertino_icons: ^1.0.8
+  google_fonts: ^9.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  
+  flutter_lints: ^6.0.0
+
+
+# The following section is specific to Flutter packages.
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/especialista_clinico_geral.png
+    - assets/especialista_cardiologia.png
+    - assets/especialista_oftalmologia.png
+    - assets/especialista_dermatologia.png
+    - assets/brain-organ.png
+    - assets/human-uterus.png
+    - assets/orthopedics.png
+    - assets/otorhinolaryngology.png
+    - assets/teddy-bear.png
+
+ 
