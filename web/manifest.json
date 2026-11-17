@@ -1,6 +1,6 @@
 {
-    "name": "aplicativo_clinica",
-    "short_name": "aplicativo_clinica",
+    "name": "ConectaMed",
+    "short_name": "ConectaMed",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

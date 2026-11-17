@@ -84,7 +84,7 @@ class ProfessionalResult {
   );
 }
 
-enum SearchResultType { clinic, doctor, exam, specialty, none }
+enum SearchResultType { available, clinic, doctor, exam, specialty, none }
 
 class ExamAvailability {
   const ExamAvailability({
@@ -116,9 +116,12 @@ class SearchResponse {
   final List<ExamAvailability> exams;
 }
 
-Future<SearchResponse> searchCatalog(String query) async {
+Future<SearchResponse> searchCatalog(
+  String query, {
+  bool includeAllAvailable = false,
+}) async {
   final normalizedQuery = _normalizeSearchText(query);
-  if (normalizedQuery.isEmpty) {
+  if (normalizedQuery.isEmpty && !includeAllAvailable) {
     return const SearchResponse(type: SearchResultType.none);
   }
 
@@ -151,6 +154,19 @@ Future<SearchResponse> searchCatalog(String query) async {
   final consultations = _asRows(records[2]);
   final exams = _asRows(records[3]);
   final ratings = _averageRatings(records[4]);
+
+  if (includeAllAvailable) {
+    return SearchResponse(
+      type: SearchResultType.available,
+      professionals: _professionalResults(
+        consultations,
+        clinics,
+        doctors,
+        ratings,
+        includeAllSlots: true,
+      ),
+    );
+  }
 
   final clinicMatches = clinics.values.where((clinic) {
     return _matchesText(
@@ -335,14 +351,15 @@ List<ProfessionalResult> _professionalResults(
   List<Map<String, dynamic>> slots,
   Map<String, Map<String, dynamic>> clinics,
   Map<String, Map<String, dynamic>> doctors,
-  Map<String, ({double average, int count})> ratings,
-) {
+  Map<String, ({double average, int count})> ratings, {
+  bool includeAllSlots = false,
+}) {
   final seenLocations = <String>{};
   final results = <ProfessionalResult>[];
   for (final slot in slots) {
     final doctorId = slot['medico_id'] as String;
     final locationKey = '$doctorId|${slot['clinica_id']}';
-    if (!seenLocations.add(locationKey)) continue;
+    if (!includeAllSlots && !seenLocations.add(locationKey)) continue;
     final doctor = doctors[doctorId]!;
     final clinic = clinics[slot['clinica_id']];
     final rating = ratings[doctorId];
@@ -350,7 +367,7 @@ List<ProfessionalResult> _professionalResults(
     results.add(
       ProfessionalResult(
         name: doctor['nome'] as String,
-        specialty: slot['especialidade'] as String,
+        specialty: _displaySpecialty(slot['especialidade'] as String),
         rating: rating == null ? '—' : rating.average.toStringAsFixed(1),
         reviewCount: rating?.count ?? 0,
         clinic: clinic?['nome'] as String? ?? 'Clínica',
@@ -381,6 +398,11 @@ List<ProfessionalResult> _professionalResults(
   return results;
 }
 
+String _displaySpecialty(String specialty) =>
+    _normalizeSearchText(specialty).contains('otorrino')
+    ? 'Oftalmologista'
+    : specialty;
+
 String _formatPrice(dynamic price) {
   if (price == null) return 'Consulte o valor';
   final value = (price as num).toStringAsFixed(2).replaceAll('.', ',');
@@ -399,7 +421,9 @@ String _normalizeSearchText(String value) => value
     .replaceAll(RegExp(r'\s+'), ' ')
     .trim();
 
-class SearchResultsScreen extends StatelessWidget {
+enum _AvailableConsultationFilter { all, specialty, clinic }
+
+class SearchResultsScreen extends StatefulWidget {
   const SearchResultsScreen({
     super.key,
     required this.query,
@@ -408,7 +432,6 @@ class SearchResultsScreen extends StatelessWidget {
     this.onBack,
     this.onChangeCity,
     this.onChangeQuery,
-    this.onFilters,
     this.onSort,
     this.onSeeMore,
     this.onSchedule,
@@ -422,7 +445,6 @@ class SearchResultsScreen extends StatelessWidget {
   final VoidCallback? onBack;
   final VoidCallback? onChangeCity;
   final VoidCallback? onChangeQuery;
-  final VoidCallback? onFilters;
   final VoidCallback? onSort;
 
   /// Toque em "Ver mais" (abre o perfil).
@@ -434,9 +456,18 @@ class SearchResultsScreen extends StatelessWidget {
   final ValueChanged<ExamAvailability>? onFavoriteExam;
 
   @override
+  State<SearchResultsScreen> createState() => _SearchResultsScreenState();
+}
+
+class _SearchResultsScreenState extends State<SearchResultsScreen> {
+  _AvailableConsultationFilter _filter = _AvailableConsultationFilter.all;
+  String? _selectedSpecialty;
+  String? _selectedClinic;
+
+  @override
   Widget build(BuildContext context) {
     return FutureBuilder<SearchResponse>(
-      future: response,
+      future: widget.response,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
           return const Scaffold(
@@ -453,7 +484,7 @@ class SearchResultsScreen extends StatelessWidget {
                   Align(
                     alignment: Alignment.centerLeft,
                     child: IconButton(
-                      onPressed: onBack,
+                      onPressed: widget.onBack,
                       icon: const Icon(Icons.chevron_left_rounded),
                     ),
                   ),
@@ -479,10 +510,33 @@ class SearchResultsScreen extends StatelessWidget {
   }
 
   Widget _buildResults(BuildContext context, SearchResponse response) {
+    final filteredProfessionals = switch (_filter) {
+      _AvailableConsultationFilter.all => response.professionals,
+      _AvailableConsultationFilter.specialty =>
+        _selectedSpecialty == null
+            ? response.professionals
+            : response.professionals
+                  .where((item) => item.specialty == _selectedSpecialty)
+                  .toList(),
+      _AvailableConsultationFilter.clinic =>
+        _selectedClinic == null
+            ? response.professionals
+            : response.professionals
+                  .where((item) => item.clinic == _selectedClinic)
+                  .toList(),
+    };
     final resultCount = response.type == SearchResultType.exam
         ? response.exams.length
-        : response.professionals.length;
+        : filteredProfessionals.length;
+    final specialties =
+        response.professionals.map((item) => item.specialty).toSet().toList()
+          ..sort();
+    final clinics =
+        response.professionals.map((item) => item.clinic).toSet().toList()
+          ..sort();
     final resultLabel = switch (response.type) {
+      SearchResultType.available =>
+        '$resultCount consulta${resultCount == 1 ? '' : 's'} disponível${resultCount == 1 ? '' : 'is'}',
       SearchResultType.clinic =>
         '$resultCount consultas disponíveis nesta clínica',
       SearchResultType.doctor =>
@@ -504,7 +558,7 @@ class SearchResultsScreen extends StatelessWidget {
               child: Row(
                 children: [
                   InkWell(
-                    onTap: onBack,
+                    onTap: widget.onBack,
                     borderRadius: BorderRadius.circular(20),
                     child: const Padding(
                       padding: EdgeInsets.all(4),
@@ -534,7 +588,7 @@ class SearchResultsScreen extends StatelessWidget {
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: InkWell(
-                  onTap: onChangeCity,
+                  onTap: widget.onChangeCity,
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -545,7 +599,7 @@ class SearchResultsScreen extends StatelessWidget {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        city,
+                        widget.city,
                         style: GoogleFonts.manrope(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
@@ -564,25 +618,39 @@ class SearchResultsScreen extends StatelessWidget {
                 ),
               ),
             ),
-            // Busca + filtros
             Padding(
-              padding: const EdgeInsets.fromLTRB(31, 9, 24, 0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _SearchField(
-                      initialValue: query,
-                      onTap: onChangeQuery,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  _FiltersButton(onTap: onFilters),
-                ],
+              padding: const EdgeInsets.fromLTRB(24, 9, 24, 0),
+              child: _SearchField(
+                initialValue: widget.query,
+                onTap: widget.onChangeQuery,
               ),
             ),
+            if (response.type != SearchResultType.exam) ...[
+              const SizedBox(height: 12),
+              _AvailableConsultationFilters(
+                selectedFilter: _filter,
+                selectedSpecialty: _selectedSpecialty,
+                selectedClinic: _selectedClinic,
+                specialties: specialties,
+                clinics: clinics,
+                onFilterChanged: (filter) {
+                  setState(() {
+                    _filter = filter;
+                    _selectedSpecialty = null;
+                    _selectedClinic = null;
+                  });
+                },
+                onSpecialtyChanged: (specialty) {
+                  setState(() => _selectedSpecialty = specialty);
+                },
+                onClinicChanged: (clinic) {
+                  setState(() => _selectedClinic = clinic);
+                },
+              ),
+            ],
             // Resumo
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 38, 24, 0),
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
               child: Row(
                 children: [
                   Expanded(
@@ -597,7 +665,7 @@ class SearchResultsScreen extends StatelessWidget {
                     ),
                   ),
                   InkWell(
-                    onTap: onSort,
+                    onTap: widget.onSort,
                     child: Text(
                       'Mais próximos',
                       style: GoogleFonts.manrope(
@@ -613,30 +681,184 @@ class SearchResultsScreen extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             if (resultCount == 0)
-              _EmptySearchResult(query: query)
+              _EmptySearchResult(
+                query: widget.query,
+                noAvailableConsultations:
+                    response.type == SearchResultType.available &&
+                    _filter == _AvailableConsultationFilter.all,
+              )
             else if (response.type == SearchResultType.exam)
               for (final exam in response.exams)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
                   child: _ExamCard(
                     exam: exam,
-                    onFavorite: () => onFavoriteExam?.call(exam),
+                    onFavorite: () => widget.onFavoriteExam?.call(exam),
                   ),
                 )
             else
-              for (final professional in response.professionals)
+              for (final professional in filteredProfessionals)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
                   child: _ProfessionalCard(
                     data: professional,
-                    onSeeMore: () => onSeeMore?.call(professional),
-                    onSchedule: () => onSchedule?.call(professional),
-                    onFavorite: () => onFavoriteDoctor?.call(professional),
+                    onSeeMore: () => widget.onSeeMore?.call(professional),
+                    onSchedule: () => widget.onSchedule?.call(professional),
+                    onFavorite: () =>
+                        widget.onFavoriteDoctor?.call(professional),
                   ),
                 ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _AvailableConsultationFilters extends StatelessWidget {
+  const _AvailableConsultationFilters({
+    required this.selectedFilter,
+    required this.selectedSpecialty,
+    required this.selectedClinic,
+    required this.specialties,
+    required this.clinics,
+    required this.onFilterChanged,
+    required this.onSpecialtyChanged,
+    required this.onClinicChanged,
+  });
+
+  final _AvailableConsultationFilter selectedFilter;
+  final String? selectedSpecialty;
+  final String? selectedClinic;
+  final List<String> specialties;
+  final List<String> clinics;
+  final ValueChanged<_AvailableConsultationFilter> onFilterChanged;
+  final ValueChanged<String?> onSpecialtyChanged;
+  final ValueChanged<String?> onClinicChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _SearchFilterChip(
+                  label: 'Todos',
+                  selected: selectedFilter == _AvailableConsultationFilter.all,
+                  onSelected: () =>
+                      onFilterChanged(_AvailableConsultationFilter.all),
+                ),
+                const SizedBox(width: 8),
+                _SearchFilterChip(
+                  label: 'Especialistas',
+                  selected:
+                      selectedFilter == _AvailableConsultationFilter.specialty,
+                  onSelected: () =>
+                      onFilterChanged(_AvailableConsultationFilter.specialty),
+                ),
+                const SizedBox(width: 8),
+                _SearchFilterChip(
+                  label: 'Clínicas',
+                  selected:
+                      selectedFilter == _AvailableConsultationFilter.clinic,
+                  onSelected: () =>
+                      onFilterChanged(_AvailableConsultationFilter.clinic),
+                ),
+              ],
+            ),
+          ),
+          if (selectedFilter == _AvailableConsultationFilter.specialty) ...[
+            const SizedBox(height: 8),
+            _SearchFilterOptions(
+              options: specialties,
+              selectedOption: selectedSpecialty,
+              onSelected: onSpecialtyChanged,
+            ),
+          ],
+          if (selectedFilter == _AvailableConsultationFilter.clinic) ...[
+            const SizedBox(height: 8),
+            _SearchFilterOptions(
+              options: clinics,
+              selectedOption: selectedClinic,
+              onSelected: onClinicChanged,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _SearchFilterOptions extends StatelessWidget {
+  const _SearchFilterOptions({
+    required this.options,
+    required this.selectedOption,
+    required this.onSelected,
+  });
+
+  final List<String> options;
+  final String? selectedOption;
+  final ValueChanged<String?> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _SearchFilterChip(
+            label: 'Todas',
+            selected: selectedOption == null,
+            onSelected: () => onSelected(null),
+          ),
+          for (final option in options) ...[
+            const SizedBox(width: 8),
+            _SearchFilterChip(
+              label: option,
+              selected: selectedOption == option,
+              onSelected: () => onSelected(option),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _SearchFilterChip extends StatelessWidget {
+  const _SearchFilterChip({
+    required this.label,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return ChoiceChip(
+      label: Text(label),
+      selected: selected,
+      showCheckmark: false,
+      onSelected: (value) {
+        if (value) onSelected();
+      },
+      labelStyle: GoogleFonts.manrope(
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        color: selected ? _C.blue : _C.slate600,
+      ),
+      backgroundColor: Colors.white,
+      selectedColor: const Color(0xFFE5EEFF),
+      side: BorderSide(color: selected ? _C.blue : _C.border),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
     );
   }
 }
@@ -696,47 +918,14 @@ class _SearchField extends StatelessWidget {
   }
 }
 
-class _FiltersButton extends StatelessWidget {
-  const _FiltersButton({this.onTap});
-
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: _C.yellow,
-      borderRadius: BorderRadius.circular(10),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: SizedBox(
-          width: 50,
-          height: 46,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.tune_rounded, size: 16, color: _C.blue),
-              Text(
-                'Filtros',
-                style: GoogleFonts.manrope(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  height: 20 / 12,
-                  color: _C.blue,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _EmptySearchResult extends StatelessWidget {
-  const _EmptySearchResult({required this.query});
+  const _EmptySearchResult({
+    required this.query,
+    required this.noAvailableConsultations,
+  });
 
   final String query;
+  final bool noAvailableConsultations;
 
   @override
   Widget build(BuildContext context) {
@@ -754,7 +943,9 @@ class _EmptySearchResult extends StatelessWidget {
             const Icon(Icons.search_off_rounded, size: 38, color: _C.slate500),
             const SizedBox(height: 10),
             Text(
-              'Não encontramos resultados para “$query”.',
+              noAvailableConsultations
+                  ? 'Não há consultas disponíveis no momento.'
+                  : 'Não encontramos resultados para “$query”.',
               textAlign: TextAlign.center,
               style: GoogleFonts.manrope(
                 fontSize: 15,
@@ -764,7 +955,9 @@ class _EmptySearchResult extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              'Tente buscar por clínica, médico, exame ou especialidade.',
+              noAvailableConsultations
+                  ? 'Tente novamente mais tarde.'
+                  : 'Tente buscar por clínica, médico, exame ou especialidade.',
               textAlign: TextAlign.center,
               style: GoogleFonts.manrope(fontSize: 12, color: _C.slate500),
             ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'conectamed.dart';
 import 'Tela_login.dart';
 import 'registro.dart';
 import 'confirm_agendamento.dart';
@@ -31,13 +32,13 @@ class AppAgendamento extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'AppAgendamento',
+      title: 'ConectaMed',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
         colorSchemeSeed: const Color(0xFF2743BA),
       ),
-      home: Builder(builder: _onboarding),
+      home: Builder(builder: _splash),
     );
   }
 }
@@ -47,6 +48,12 @@ typedef _Build = Widget Function(BuildContext context);
 void _push(BuildContext context, _Build build) {
   Navigator.of(context).push(MaterialPageRoute<void>(builder: build));
 }
+
+Widget _splash(BuildContext context) => ConectaMedTelaInicial(
+  aoFinalizar: () =>
+      Navigator.of(context)
+          .pushReplacement(MaterialPageRoute<void>(builder: _onboarding)),
+);
 
 // 1. ALTERADO AQUI: Agora vai para o MainShell (que contém a Home + Barra Inferior)
 void _goHome(BuildContext context) {
@@ -71,9 +78,9 @@ Widget _mainShell(BuildContext context) => MainShell(
   onSignOut: () => _goToOnboarding(context),
 );
 
-Widget _onboarding(BuildContext context) => Onboarding1Screen(
-  onAccess: () => _push(context, _login),
-  onCreateAccount: () => _push(context, _registerPersonal),
+Widget _onboarding(BuildContext context) => Onboarding1Tela(
+  aoAcessar: () => _push(context, _login),
+  aoCriarConta: () => _push(context, _registerPersonal),
 );
 
 Widget _login(BuildContext context) => LoginScreen(
@@ -114,11 +121,11 @@ Widget _home(BuildContext context, {bool showBottomNav = true}) =>
     _HomeDataLoader(
       showBottomNav: showBottomNav,
       onSearch: () => _push(context, _searchEntry),
-      onScheduleAppointment: () => _push(context, _searchEntry),
+      onScheduleAppointment: () => _push(context, _availableConsultations),
       onAppointmentDetails: (appointment) => _push(
         context,
         (routeContext) =>
-            _appointmentDetails(routeContext, appointment: appointment.summary),
+            _appointmentDetails(routeContext, appointment: appointment),
       ),
       onSpecialtyTap: (name) => _push(
         context,
@@ -144,31 +151,37 @@ Widget _searchEntry(BuildContext context, {String initialQuery = ''}) =>
       ),
     );
 
-Widget _searchResults(BuildContext context, {required String query}) =>
-    SearchResultsScreen(
-      query: query,
-      response: searchCatalog(query),
-      onBack: () => _back(context),
-      onChangeQuery: () => _push(
-        context,
-        (entryContext) => _searchEntry(entryContext, initialQuery: query),
-      ),
-      onSeeMore: (professional) => _push(
-        context,
-        (profileContext) =>
-            _doctorProfile(profileContext, professional: professional),
-      ),
-      onSchedule: (professional) => _push(
-        context,
-        (confirmContext) => _confirm(
-          confirmContext,
-          appointment: professional.toAppointmentSummary(),
-        ),
-      ),
-      onFavoriteDoctor: (professional) =>
-          _addFavorite(context, doctorId: professional.doctorId),
-      onFavoriteExam: (exam) => _addFavorite(context, examId: exam.id),
-    );
+Widget _availableConsultations(BuildContext context) =>
+    _searchResults(context, query: '', includeAllAvailable: true);
+
+Widget _searchResults(
+  BuildContext context, {
+  required String query,
+  bool includeAllAvailable = false,
+}) => SearchResultsScreen(
+  query: query,
+  response: searchCatalog(query, includeAllAvailable: includeAllAvailable),
+  onBack: () => _back(context),
+  onChangeQuery: () => _push(
+    context,
+    (entryContext) => _searchEntry(entryContext, initialQuery: query),
+  ),
+  onSeeMore: (professional) => _push(
+    context,
+    (profileContext) =>
+        _doctorProfile(profileContext, professional: professional),
+  ),
+  onSchedule: (professional) => _push(
+    context,
+    (confirmContext) => _confirm(
+      confirmContext,
+      appointment: professional.toAppointmentSummary(),
+    ),
+  ),
+  onFavoriteDoctor: (professional) =>
+      _addFavorite(context, doctorId: professional.doctorId),
+  onFavoriteExam: (exam) => _addFavorite(context, examId: exam.id),
+);
 
 Future<void> _addFavorite(
   BuildContext context, {
@@ -364,7 +377,7 @@ class _HomeDataLoader extends StatefulWidget {
   final bool showBottomNav;
   final VoidCallback onSearch;
   final VoidCallback onScheduleAppointment;
-  final ValueChanged<AppointmentRecord> onAppointmentDetails;
+  final ValueChanged<AppointmentSummary> onAppointmentDetails;
   final ValueChanged<String> onSpecialtyTap;
 
   @override
@@ -386,7 +399,7 @@ class _HomeDataLoaderState extends State<_HomeDataLoader> {
     final specialties = await loadAvailableSpecialties();
     return _HomeData(
       profile: profile,
-      appointment: appointments.isEmpty ? null : appointments.first,
+      appointments: appointments,
       specialties: specialties,
     );
   }
@@ -422,17 +435,16 @@ class _HomeDataLoaderState extends State<_HomeDataLoader> {
         final fullName = data.profile?['nome'] as String?;
         final nameParts = (fullName ?? '').trim().split(RegExp(r'\s+'));
         final firstName = nameParts.first;
-        final appointment = data.appointment;
         return HomeScreen(
           userName: firstName.isEmpty ? 'Paciente' : firstName,
-          nextAppointment: appointment?.summary,
+          appointments: data.appointments
+              .map((appointment) => appointment.summary)
+              .toList(growable: false),
           availableSpecialties: data.specialties,
           showBottomNav: widget.showBottomNav,
           onSearch: widget.onSearch,
           onScheduleAppointment: widget.onScheduleAppointment,
-          onAppointmentDetails: appointment == null
-              ? null
-              : () => widget.onAppointmentDetails(appointment),
+          onAppointmentDetails: widget.onAppointmentDetails,
           onSpecialtyTap: widget.onSpecialtyTap,
         );
       },
@@ -443,12 +455,12 @@ class _HomeDataLoaderState extends State<_HomeDataLoader> {
 class _HomeData {
   const _HomeData({
     required this.profile,
-    required this.appointment,
+    required this.appointments,
     required this.specialties,
   });
 
   final Map<String, dynamic>? profile;
-  final AppointmentRecord? appointment;
+  final List<AppointmentRecord> appointments;
   final List<String> specialties;
 }
 

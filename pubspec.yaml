@@ -19,6 +19,7 @@ dependencies:
   google_fonts: ^9.0.0
   url_launcher: ^6.3.3
   supabase_flutter: ^2.18.3
+  flutter_svg: ^2.0.0
 
 dev_dependencies:
   flutter_test:
@@ -26,12 +27,11 @@ dev_dependencies:
 
   
   flutter_lints: ^6.0.0
-
-
 # The following section is specific to Flutter packages.
 flutter:
   uses-material-design: true
   assets:
+    - assets/onboarding1_ilustracao.svg.svg
     - assets/especialista_clinico_geral.png
     - assets/especialista_cardiologia.png
     - assets/especialista_oftalmologia.png
@@ -41,5 +41,6 @@ flutter:
     - assets/orthopedics.png
     - assets/otorhinolaryngology.png
     - assets/teddy-bear.png
+    - assets/Logo_ConectaMed.png
 
  

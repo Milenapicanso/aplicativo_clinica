@@ -62,9 +62,9 @@ const _specialties = [
     fallback: Icons.child_care_rounded,
   ),
   _SpecialtyData(
-    name: 'Otorrino',
-    asset: 'assets/otorhinolaryngology.png',
-    fallback: Icons.hearing_rounded,
+    name: 'Oftalmologista',
+    asset: 'assets/especialista_oftalmologia.png',
+    fallback: Icons.visibility_outlined,
   ),
   _SpecialtyData(
     name: 'Psiquiatria',
@@ -77,7 +77,7 @@ class HomeScreen extends StatelessWidget {
   const HomeScreen({
     super.key,
     this.userName = 'Maria',
-    this.nextAppointment,
+    this.appointments = const [],
     this.availableSpecialties = const [],
     this.city,
     this.onSelectCity,
@@ -92,7 +92,7 @@ class HomeScreen extends StatelessWidget {
   });
 
   final String userName;
-  final AppointmentSummary? nextAppointment;
+  final List<AppointmentSummary> appointments;
   final List<String> availableSpecialties;
 
   /// Cidade escolhida. Quando nula, mostra "Selecionar cidade".
@@ -104,7 +104,7 @@ class HomeScreen extends StatelessWidget {
   final VoidCallback? onLabExams;
   final VoidCallback? onSeeAllSpecialties;
   final ValueChanged<String>? onSpecialtyTap;
-  final VoidCallback? onAppointmentDetails;
+  final ValueChanged<AppointmentSummary>? onAppointmentDetails;
 
   /// Índice da aba tocada: 0 Início, 1 Consultas, 2 Mensagens, 3 Perfil.
   final ValueChanged<int>? onNavigate;
@@ -112,9 +112,18 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final specialties = availableSpecialties
+    final loadedSpecialties = availableSpecialties
         .map(_specialtyData)
         .toList(growable: false);
+    final generalPractice = _specialties.first;
+    final specialties = [
+      generalPractice,
+      ...loadedSpecialties.where(
+        (specialty) =>
+            _normalizeSpecialty(specialty.name) !=
+            _normalizeSpecialty(generalPractice.name),
+      ),
+    ];
     return Scaffold(
       backgroundColor: Colors.white,
       bottomNavigationBar: showBottomNav
@@ -156,11 +165,12 @@ class HomeScreen extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 26),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Especialistas',
-                      style: _outfit(20, FontWeight.w500, Colors.black, 28),
+                    Expanded(
+                      child: Text(
+                        'Especialistas',
+                        style: _outfit(20, FontWeight.w500, Colors.black, 28),
+                      ),
                     ),
                     InkWell(
                       onTap: () {
@@ -220,13 +230,22 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 13),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 26),
-                child: _NextAppointmentCard(
-                  appointment: nextAppointment,
-                  onDetails: onAppointmentDetails,
-                ),
-              ),
+              if (appointments.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 26),
+                  child: _NextAppointmentCard(
+                    onSchedule: onScheduleAppointment,
+                  ),
+                )
+              else
+                for (final appointment in appointments)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(26, 0, 26, 12),
+                    child: _NextAppointmentCard(
+                      appointment: appointment,
+                      onDetails: () => onAppointmentDetails?.call(appointment),
+                    ),
+                  ),
             ],
           ),
         ),
@@ -303,24 +322,31 @@ void _showAllSpecialties(
                 ),
               ),
               Expanded(
-                child: GridView.builder(
-                  controller: scrollController,
-                  padding: const EdgeInsets.fromLTRB(20, 10, 20, 28),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    crossAxisSpacing: 10,
-                    mainAxisSpacing: 16,
-                    childAspectRatio: 0.78,
-                  ),
-                  itemCount: specialties.length,
-                  itemBuilder: (context, index) {
-                    final specialty = specialties[index];
-                    return _Specialty(
-                      specialty: specialty,
-                      onTap: (name) {
-                        Navigator.of(sheetContext).pop();
-                        onSpecialtyTap?.call(name);
-                      },
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final itemWidth = (constraints.maxWidth - 40 - 20) / 3;
+                    return SingleChildScrollView(
+                      controller: scrollController,
+                      padding: const EdgeInsets.fromLTRB(20, 10, 20, 28),
+                      child: Wrap(
+                        alignment: WrapAlignment.center,
+                        spacing: 10,
+                        runSpacing: 16,
+                        children: [
+                          for (final specialty in specialties)
+                            SizedBox(
+                              width: itemWidth,
+                              height: 120,
+                              child: _Specialty(
+                                specialty: specialty,
+                                onTap: (name) {
+                                  Navigator.of(sheetContext).pop();
+                                  onSpecialtyTap?.call(name);
+                                },
+                              ),
+                            ),
+                        ],
+                      ),
                     );
                   },
                 ),
@@ -347,15 +373,21 @@ TextStyle _outfit(
 
 _SpecialtyData _specialtyData(String name) {
   final normalized = _normalizeSpecialty(name);
+  if (normalized.contains('otorrino')) {
+    return const _SpecialtyData(
+      name: 'Oftalmologista',
+      asset: 'assets/especialista_oftalmologia.png',
+      fallback: Icons.visibility_outlined,
+    );
+  }
   for (final item in _specialties) {
     final known = _normalizeSpecialty(item.name);
     if (normalized == known ||
         normalized.contains(known) ||
         known.contains(normalized) ||
-        (normalized.contains('gineco') && known.contains('gineco')) ||
-        (normalized.contains('otorrino') && known.contains('otorrino'))) {
+        (normalized.contains('gineco') && known.contains('gineco'))) {
       return _SpecialtyData(
-        name: name,
+        name: item.name == 'Oftalmologista' ? item.name : name,
         asset: item.asset,
         fallback: item.fallback,
       );
@@ -456,7 +488,6 @@ class _Greeting extends StatelessWidget {
         InkWell(
           onTap: onSelectCity,
           child: Row(
-            mainAxisSize: MainAxisSize.min,
             children: [
               const Icon(
                 Icons.location_on_outlined,
@@ -473,13 +504,17 @@ class _Greeting extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              Text(
-                city ?? 'Selecionar cidade',
-                style: GoogleFonts.manrope(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  height: 20 / 13,
-                  color: _C.blueDark,
+              Expanded(
+                child: Text(
+                  city ?? 'Selecionar cidade',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.manrope(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    height: 20 / 13,
+                    color: _C.blueDark,
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
@@ -509,26 +544,6 @@ class _ActionsPanel extends StatelessWidget {
       height: 252,
       child: Stack(
         children: [
-          // Brilho azul atrás dos cartões (no Figma é a imagem SVG "Vector 1";
-          // aqui é aproximado com uma sombra azul esmaecida).
-          Positioned(
-            left: 24,
-            right: 24,
-            top: 96,
-            height: 104,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(40),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x665AB4FF),
-                    blurRadius: 40,
-                    spreadRadius: 10,
-                  ),
-                ],
-              ),
-            ),
-          ),
           // Campo de busca (sem borda, só sombra)
           Positioned(
             left: 8,
@@ -595,8 +610,9 @@ class _ActionsPanel extends StatelessWidget {
                   child: _ActionCard(
                     title: 'Agendar consulta',
                     subtitle: 'Encontre seu\nespecialista',
-                    colors: const [Color(0xFF8ACFF8), Color(0xFF006199)],
-                    textColor: const Color(0xFF19354B),
+                    colors: const [Color(0xFF1E96FC), Color(0xFF072AC8)],
+                    textColor: Colors.white,
+                    titleFontSize: 19,
                     titleShadow: const Shadow(
                       color: Color(0x40000000),
                       offset: Offset(0, 2),
@@ -636,6 +652,7 @@ class _ActionCard extends StatelessWidget {
     required this.colors,
     required this.textColor,
     required this.titleShadow,
+    this.titleFontSize = 18,
     this.onTap,
   });
 
@@ -644,6 +661,7 @@ class _ActionCard extends StatelessWidget {
   final List<Color> colors;
   final Color textColor;
   final Shadow titleShadow;
+  final double titleFontSize;
   final VoidCallback? onTap;
 
   @override
@@ -656,14 +674,6 @@ class _ActionCard extends StatelessWidget {
         borderRadius: radius,
         border: Border.all(color: const Color(0x2E173C6A)),
         gradient: LinearGradient(colors: colors),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x29173C6A),
-            blurRadius: 12,
-            spreadRadius: -2,
-            offset: Offset(0, 5),
-          ),
-        ],
       ),
       child: Material(
         type: MaterialType.transparency,
@@ -679,9 +689,9 @@ class _ActionCard extends StatelessWidget {
                 child: Text(
                   title,
                   style: GoogleFonts.manrope(
-                    fontSize: 18,
+                    fontSize: titleFontSize,
                     fontWeight: FontWeight.w600,
-                    height: 22 / 18,
+                    height: 22 / titleFontSize,
                     color: textColor,
                     shadows: [titleShadow],
                   ),
@@ -741,8 +751,8 @@ class _Specialty extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 64,
-            height: 64,
+            width: 56,
+            height: 56,
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: Colors.white,
@@ -756,14 +766,14 @@ class _Specialty extends StatelessWidget {
               ],
             ),
             child: specialty.asset == null
-                ? Icon(specialty.fallback, size: 32, color: _C.navy)
+                ? Icon(specialty.fallback, size: 26, color: _C.navy)
                 : Image.asset(
                     specialty.asset!,
-                    width: 40,
-                    height: 40,
-                    fit: BoxFit.cover,
+                    width: 30,
+                    height: 30,
+                    fit: BoxFit.contain,
                     errorBuilder: (_, _, _) =>
-                        Icon(specialty.fallback, size: 32, color: _C.navy),
+                        Icon(specialty.fallback, size: 26, color: _C.navy),
                   ),
           ),
           const SizedBox(height: 8),
@@ -786,16 +796,21 @@ class _Specialty extends StatelessWidget {
 }
 
 class _NextAppointmentCard extends StatelessWidget {
-  const _NextAppointmentCard({this.appointment, this.onDetails});
+  const _NextAppointmentCard({
+    this.appointment,
+    this.onDetails,
+    this.onSchedule,
+  });
 
   final AppointmentSummary? appointment;
   final VoidCallback? onDetails;
+  final VoidCallback? onSchedule;
 
   @override
   Widget build(BuildContext context) {
     final appointment = this.appointment;
     return Container(
-      height: 162,
+      constraints: const BoxConstraints(minHeight: 162),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(26),
         gradient: const LinearGradient(
@@ -806,6 +821,7 @@ class _NextAppointmentCard extends StatelessWidget {
       ),
       padding: const EdgeInsets.fromLTRB(18, 17, 18, 16),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -870,7 +886,7 @@ class _NextAppointmentCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 10),
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF7AE582),
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(13),
                 ),
                 child: Text(
@@ -892,35 +908,43 @@ class _NextAppointmentCard extends StatelessWidget {
                 color: Color(0xFF294B69),
               ),
               const SizedBox(width: 12),
-              Text(
-                appointment == null
-                    ? 'Nenhum horário marcado'
-                    : _appointmentDateTime(appointment.scheduledAt),
-                style: _outfit(
-                  13,
-                  FontWeight.w600,
-                  const Color(0xFF294B69),
-                  17.55,
+              Expanded(
+                child: Text(
+                  appointment == null
+                      ? 'Nenhum horário marcado'
+                      : _appointmentDateTime(appointment.scheduledAt),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: _outfit(
+                    13,
+                    FontWeight.w600,
+                    const Color(0xFF294B69),
+                    17.55,
+                  ),
                 ),
               ),
             ],
           ),
-          const Spacer(),
+          const SizedBox(height: 12),
           Material(
             color: Colors.white,
             borderRadius: BorderRadius.circular(18),
             child: InkWell(
-              onTap: onDetails,
+              onTap: appointment == null ? onSchedule : onDetails,
               borderRadius: BorderRadius.circular(18),
-              child: SizedBox(
-                height: 35,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 40),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 14),
                   child: Row(
                     children: [
                       Expanded(
                         child: Text(
-                          'Mais Informações',
+                          appointment == null
+                              ? 'Agendar consulta'
+                              : 'Mais Informações',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           textAlign: TextAlign.center,
                           style: _outfit(
                             13,

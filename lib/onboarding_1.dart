@@ -1,111 +1,126 @@
-// Tela "Onboarding 1" do AppAgendamento (Figma node 18:17).
-//
-// Dependência: google_fonts (fonte Manrope)
-//   flutter pub add google_fonts
-//
-// A barra de status (9:41, sinal, bateria) e o indicador de gesto do Figma
-// são só moldura de celular, o próprio sistema desenha isso no app real.
-
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class _AppColors {
-  static const background = Color(0xFFFBFBFB);
-  static const title = Color(0xFF182C47);
-  static const body = Color(0xFF627389);
-  static const link = Color(0xFF264763);
-  static const gradientStart = Color(0xFF3A9AFF);
-  static const gradientEnd = Color(0xFF261CC1);
-}
+/// Tela Onboarding 1.
+///
+/// Convertida do Figma: arquivo "AppAgendamento", frame "Onboarding 1".
+///
+/// Requer o asset: assets/onboarding1_ilustracao.svg.svg.
+/// (exportar do Figma o item "Ilustração · Agendamento médico").
+///
+/// Pacotes: flutter_svg e google_fonts (fonte Manrope).
+class Onboarding1Tela extends StatelessWidget {
+  const Onboarding1Tela({super.key, this.aoAcessar, this.aoCriarConta});
 
-class Onboarding1Screen extends StatelessWidget {
-  const Onboarding1Screen({
-    super.key,
-    this.onAccess,
-    this.onCreateAccount,
-  });
-
-  /// Toque em "Acessar agora".
-  final VoidCallback? onAccess;
+  /// Toque no botão "Acessar agora".
+  final VoidCallback? aoAcessar;
 
   /// Toque em "Crie um agora".
-  final VoidCallback? onCreateAccount;
+  final VoidCallback? aoCriarConta;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _AppColors.background,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Spacer(),
-              Text(
-                'Agende sua consulta ou exame em poucos cliques',
-                style: GoogleFonts.manrope(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
-                  height: 35 / 28,
-                  color: _AppColors.title,
-                ),
-              ),
-              const SizedBox(height: 0),
-              Text(
-                'Sem filas, sem ligações e sem complicação. Escolha o médico, '
-                'o dia e o horário que ficam melhores para você.',
-                style: GoogleFonts.manrope(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                  height: 22 / 14,
-                  color: _AppColors.body,
-                ),
-              ),
-              const SizedBox(height: 63),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: _GradientButton(
-                  label: 'Acessar agora',
-                  onPressed: onAccess,
-                ),
-              ),
-              const SizedBox(height: 44),
-              Center(
-                child: TextButton(
-                  onPressed: onCreateAccount,
-                  style: TextButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    foregroundColor: _AppColors.link,
-                  ),
-                  child: Text.rich(
-                    TextSpan(
-                      style: GoogleFonts.manrope(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        height: 22 / 15,
-                        color: _AppColors.link,
-                      ),
-                      children: [
-                        const TextSpan(text: 'Não tem uma conta?'),
-                        TextSpan(
-                          text: ' Crie um agora',
-                          style: GoogleFonts.manrope(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w800,
-                            height: 22 / 15,
-                            color: _AppColors.link,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark.copyWith(
+        statusBarColor: Colors.transparent,
+      ),
+      child: Scaffold(
+        backgroundColor: _Cores.fundo,
+        body: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: IntrinsicHeight(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Ilustração · Agendamento médico (294 x 254,8)
+                          Center(
+                            child: SizedBox(
+                              width: 294,
+                              height: 254.8,
+                              child: SvgPicture.asset(
+                                'assets/onboarding1_ilustracao.svg.svg',
+                                fit: BoxFit.contain,
+                              ),
+                            ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 34),
+
+                          // Apresentação
+                          Text(
+                            'Marque sua consulta ou exame em poucos cliques',
+                            style: GoogleFonts.manrope(
+                              fontSize: 27,
+                              fontWeight: FontWeight.w700,
+                              height: 34 / 27,
+                              letterSpacing: -0.45,
+                              color: _Cores.titulo,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Sem filas, sem ligações e sem complicação. '
+                            'Escolha o médico, o dia e o horário que ficam '
+                            'melhores para você.',
+                            style: GoogleFonts.manrope(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w400,
+                              height: 22 / 14,
+                              color: _Cores.subtitulo,
+                            ),
+                          ),
+
+                          const SizedBox(height: 32),
+                          const Spacer(),
+
+                          // Botão "Acessar agora"
+                          _BotaoAcessar(onTap: aoAcessar),
+                          const SizedBox(height: 24),
+
+                          // "Não tem uma conta? Crie um agora"
+                          Center(
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'Não tem uma conta? ',
+                                  style: GoogleFonts.manrope(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    height: 22 / 14,
+                                    color: _Cores.link,
+                                  ),
+                                ),
+                                InkWell(
+                                  onTap: aoCriarConta,
+                                  borderRadius: BorderRadius.circular(4),
+                                  child: Text(
+                                    'Crie um agora',
+                                    style: GoogleFonts.manrope(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w800,
+                                      height: 22 / 14,
+                                      color: _Cores.link,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 48),
-            ],
+              );
+            },
           ),
         ),
       ),
@@ -113,43 +128,54 @@ class Onboarding1Screen extends StatelessWidget {
   }
 }
 
-class _GradientButton extends StatelessWidget {
-  const _GradientButton({required this.label, this.onPressed});
+/// Botão com degradê azul (#3A9AFF -> #261CC1), 54 de altura, cantos 15.
+class _BotaoAcessar extends StatelessWidget {
+  const _BotaoAcessar({this.onTap});
 
-  final String label;
-  final VoidCallback? onPressed;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final radius = BorderRadius.circular(15);
-
-    return Ink(
-      height: 52,
-      decoration: BoxDecoration(
-        borderRadius: radius,
-        // Figma: linear-gradient(159.76deg, #3A9AFF 0%, #261CC1 86.957%)
-        gradient: const LinearGradient(
-          begin: Alignment(-0.34, -0.94),
-          end: Alignment(0.34, 0.94),
-          colors: [_AppColors.gradientStart, _AppColors.gradientEnd],
-          stops: [0.0, 0.86957],
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(15),
+      clipBehavior: Clip.antiAlias,
+      child: Ink(
+        height: 54,
+        decoration: const BoxDecoration(
+          // Ângulo de 159° do Figma, convertido para alinhamentos do Flutter.
+          gradient: LinearGradient(
+            begin: Alignment(-0.183, -2.862),
+            end: Alignment(0.183, 2.862),
+            colors: [_Cores.botaoInicio, _Cores.botaoFim, _Cores.botaoFim],
+            stops: [0.0, 0.86957, 1.0],
+          ),
         ),
-      ),
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: radius,
-        child: Center(
-          child: Text(
-            label,
-            style: GoogleFonts.manrope(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              height: 22 / 15,
-              color: Colors.white,
+        child: InkWell(
+          onTap: onTap,
+          child: Center(
+            child: Text(
+              'Acessar agora',
+              style: GoogleFonts.manrope(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                height: 22 / 15,
+                color: Colors.white,
+              ),
             ),
           ),
         ),
       ),
     );
   }
+}
+
+/// Cores tiradas do Figma.
+class _Cores {
+  static const fundo = Color(0xFFF5EFFF);
+  static const titulo = Color(0xFF182C47);
+  static const subtitulo = Color(0xFF52637A);
+  static const link = Color(0xFF264763);
+  static const botaoInicio = Color(0xFF3A9AFF);
+  static const botaoFim = Color(0xFF261CC1);
 }
