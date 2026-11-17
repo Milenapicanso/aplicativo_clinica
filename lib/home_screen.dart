@@ -84,6 +84,7 @@ class HomeScreen extends StatelessWidget {
     this.onSearch,
     this.onScheduleAppointment,
     this.onLabExams,
+    this.onOpenMap,
     this.onSeeAllSpecialties,
     this.onSpecialtyTap,
     this.onAppointmentDetails,
@@ -102,6 +103,7 @@ class HomeScreen extends StatelessWidget {
   final VoidCallback? onSearch;
   final VoidCallback? onScheduleAppointment;
   final VoidCallback? onLabExams;
+  final VoidCallback? onOpenMap;
   final VoidCallback? onSeeAllSpecialties;
   final ValueChanged<String>? onSpecialtyTap;
   final ValueChanged<AppointmentSummary>? onAppointmentDetails;
@@ -159,6 +161,7 @@ class HomeScreen extends StatelessWidget {
                   onSearch: onSearch,
                   onSchedule: onScheduleAppointment,
                   onLabExams: onLabExams,
+                  onOpenMap: onOpenMap,
                 ),
               ),
               const SizedBox(height: 4),
@@ -532,16 +535,22 @@ class _Greeting extends StatelessWidget {
 }
 
 class _ActionsPanel extends StatelessWidget {
-  const _ActionsPanel({this.onSearch, this.onSchedule, this.onLabExams});
+  const _ActionsPanel({
+    this.onSearch,
+    this.onSchedule,
+    this.onLabExams,
+    this.onOpenMap,
+  });
 
   final VoidCallback? onSearch;
   final VoidCallback? onSchedule;
   final VoidCallback? onLabExams;
+  final VoidCallback? onOpenMap;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 252,
+      height: 316,
       child: Stack(
         children: [
           // Campo de busca (sem borda, só sombra)
@@ -637,6 +646,64 @@ class _ActionsPanel extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+          Positioned(
+            left: 16,
+            right: 16,
+            top: 248,
+            child: Material(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              child: InkWell(
+                onTap: onOpenMap,
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  height: 58,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: const Color(0xFFDCE3EF)),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.map_outlined,
+                        color: Color(0xFF2743BA),
+                        size: 25,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Mapa de clínicas',
+                              style: GoogleFonts.manrope(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF162E93),
+                              ),
+                            ),
+                            Text(
+                              'Veja a distância até você',
+                              style: GoogleFonts.manrope(
+                                fontSize: 11,
+                                color: const Color(0xFF64748B),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        color: Color(0xFF64748B),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
         ],

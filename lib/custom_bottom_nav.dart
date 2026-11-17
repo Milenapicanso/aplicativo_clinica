@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'app_colors.dart';
 
 class CustomBottomNav extends StatelessWidget {
@@ -32,17 +33,50 @@ class CustomBottomNav extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _buildNavItem(0, Icons.home_outlined, Icons.home, 'Início'),
-            _buildNavItem(1, Icons.notifications_none_rounded, Icons.notifications_rounded, 'Notificações'),
-            _buildNavItem(2, Icons.favorite_border_rounded, Icons.favorite_border_rounded, 'Favoritos'),
-            _buildNavItem(3, Icons.person_outline_rounded, Icons.person_outline_rounded, 'Perfil'),
+            Expanded(
+              child: _buildNavItem(
+                0,
+                Icons.home_outlined,
+                Icons.home,
+                'Início',
+              ),
+            ),
+            Expanded(
+              child: _buildNavItem(
+                1,
+                Icons.notifications_none_rounded,
+                Icons.notifications_rounded,
+                'Avisos',
+              ),
+            ),
+            Expanded(
+              child: _buildNavItem(
+                2,
+                Icons.favorite_border_rounded,
+                Icons.favorite_rounded,
+                'Favoritos',
+              ),
+            ),
+            Expanded(
+              child: _buildNavItem(
+                3,
+                Icons.person_outline_rounded,
+                Icons.person_rounded,
+                'Perfil',
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildNavItem(int index, IconData icon, IconData activeIcon, String label) {
+  Widget _buildNavItem(
+    int index,
+    IconData icon,
+    IconData activeIcon,
+    String label,
+  ) {
     final bool isSelected = currentIndex == index;
     return GestureDetector(
       onTap: () => onTap(index),
@@ -52,7 +86,7 @@ class CustomBottomNav extends StatelessWidget {
         children: [
           AnimatedContainer(
             duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: isSelected ? AppColors.accentYellow : Colors.transparent,
               borderRadius: BorderRadius.circular(20),

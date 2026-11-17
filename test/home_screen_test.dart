@@ -110,6 +110,26 @@ void main() {
     expect(openedAvailableConsultations, isTrue);
   });
 
+  testWidgets('map shortcut opens the map from the home actions', (
+    WidgetTester tester,
+  ) async {
+    var openedMap = false;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomeScreen(
+          showBottomNav: false,
+          onOpenMap: () => openedMap = true,
+        ),
+      ),
+    );
+
+    final mapButton = find.text('Mapa de clínicas');
+    await tester.ensureVisible(mapButton);
+    await tester.tap(mapButton);
+
+    expect(openedMap, isTrue);
+  });
+
   testWidgets('Mais Informações invokes the appointment details callback', (
     WidgetTester tester,
   ) async {

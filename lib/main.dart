@@ -14,6 +14,7 @@ import 'search_results_screen.dart';
 import 'search_entry_screen.dart';
 import 'specialty_screen.dart';
 import 'main_shell.dart';
+import 'mapa_screen.dart';
 import 'supabase_repository.dart';
 import 'supabase_client.dart';
 
@@ -122,6 +123,7 @@ Widget _home(BuildContext context, {bool showBottomNav = true}) =>
       showBottomNav: showBottomNav,
       onSearch: () => _push(context, _searchEntry),
       onScheduleAppointment: () => _push(context, _availableConsultations),
+      onOpenMap: () => _push(context, (_) => const MapaScreen()),
       onAppointmentDetails: (appointment) => _push(
         context,
         (routeContext) =>
@@ -370,6 +372,7 @@ class _HomeDataLoader extends StatefulWidget {
     required this.showBottomNav,
     required this.onSearch,
     required this.onScheduleAppointment,
+    required this.onOpenMap,
     required this.onAppointmentDetails,
     required this.onSpecialtyTap,
   });
@@ -377,6 +380,7 @@ class _HomeDataLoader extends StatefulWidget {
   final bool showBottomNav;
   final VoidCallback onSearch;
   final VoidCallback onScheduleAppointment;
+  final VoidCallback onOpenMap;
   final ValueChanged<AppointmentSummary> onAppointmentDetails;
   final ValueChanged<String> onSpecialtyTap;
 
@@ -444,6 +448,7 @@ class _HomeDataLoaderState extends State<_HomeDataLoader> {
           showBottomNav: widget.showBottomNav,
           onSearch: widget.onSearch,
           onScheduleAppointment: widget.onScheduleAppointment,
+          onOpenMap: widget.onOpenMap,
           onAppointmentDetails: widget.onAppointmentDetails,
           onSpecialtyTap: widget.onSpecialtyTap,
         );
