@@ -1,8 +1,78 @@
 // Tela "Cadrastrar" do AppAgendamento: Cadastro, etapa 1 de 2 (Figma node 19:107).
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show AuthException;
 
 import 'auth.dart';
+import 'supabase_client.dart';
+
+class BirthDateInputFormatter extends TextInputFormatter {
+  const BirthDateInputFormatter();
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final selectionOffset = newValue.selection.extentOffset
+        .clamp(0, newValue.text.length)
+        .toInt();
+    final digitsBeforeCursor = newValue.text
+        .substring(0, selectionOffset)
+        .replaceAll(RegExp(r'\D'), '')
+        .length;
+    final digits = newValue.text.replaceAll(RegExp(r'\D'), '');
+    final limitedDigits = digits.length > 8 ? digits.substring(0, 8) : digits;
+    final formatted = StringBuffer();
+
+    for (var index = 0; index < limitedDigits.length; index++) {
+      if (index == 2 || index == 4) formatted.write('/');
+      formatted.write(limitedDigits[index]);
+    }
+
+    final cursorDigits = digitsBeforeCursor > limitedDigits.length
+        ? limitedDigits.length
+        : digitsBeforeCursor;
+    final cursorOffset =
+        cursorDigits + (cursorDigits > 2 ? 1 : 0) + (cursorDigits > 4 ? 1 : 0);
+    return TextEditingValue(
+      text: formatted.toString(),
+      selection: TextSelection.collapsed(offset: cursorOffset),
+    );
+  }
+}
+
+String? _personalDataError({
+  required String name,
+  required String cpf,
+  required String birthDate,
+}) {
+  if (name.trim().isEmpty) return 'Informe seu nome completo.';
+  if (cpf.replaceAll(RegExp(r'\D'), '').length != 11) {
+    return 'O CPF deve conter 11 números.';
+  }
+  if (_birthDateToIso(birthDate) == null) {
+    return 'Informe uma data válida no formato DD/MM/AAAA.';
+  }
+  return null;
+}
+
+String? _birthDateToIso(String value) {
+  final parts = value.split('/');
+  if (parts.length != 3) return null;
+  final day = int.tryParse(parts[0]);
+  final month = int.tryParse(parts[1]);
+  final year = int.tryParse(parts[2]);
+  if (day == null || month == null || year == null) return null;
+  final date = DateTime(year, month, day);
+  if (date.year != year || date.month != month || date.day != day) {
+    return null;
+  }
+  return '${date.year.toString().padLeft(4, '0')}-'
+      '${date.month.toString().padLeft(2, '0')}-'
+      '${date.day.toString().padLeft(2, '0')}';
+}
 
 class RegisterPersonalScreen extends StatefulWidget {
   const RegisterPersonalScreen({super.key, this.onBack, this.onNext});
@@ -31,6 +101,26 @@ class _RegisterPersonalScreenState extends State<RegisterPersonalScreen> {
   final _birthDate = TextEditingController();
   String? _sex;
 
+  void _continue() {
+    final error = _personalDataError(
+      name: _name.text,
+      cpf: _cpf.text,
+      birthDate: _birthDate.text,
+    );
+    if (error != null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error)));
+      return;
+    }
+
+    widget.onNext?.call(
+      _name.text.trim(),
+      _cpf.text.trim(),
+      _birthDate.text.trim(),
+      _sex,
+    );
+  }
+
   @override
   void dispose() {
     _name.dispose();
@@ -43,15 +133,7 @@ class _RegisterPersonalScreenState extends State<RegisterPersonalScreen> {
   Widget build(BuildContext context) {
     return AuthScaffold(
       onBack: widget.onBack,
-      footer: AuthPrimaryButton(
-        label: 'Próximo',
-        onPressed: () => widget.onNext?.call(
-          _name.text.trim(),
-          _cpf.text.trim(),
-          _birthDate.text.trim(),
-          _sex,
-        ),
-      ),
+      footer: AuthPrimaryButton(label: 'Próximo', onPressed: _continue),
       children: [
         const SizedBox(height: 8),
         const StepProgress(step: 1),
@@ -86,7 +168,8 @@ class _RegisterPersonalScreenState extends State<RegisterPersonalScreen> {
           hint: 'DD/MM/AAAA',
           icon: Icons.calendar_month_outlined,
           controller: _birthDate,
-          keyboardType: TextInputType.datetime,
+          keyboardType: TextInputType.number,
+          inputFormatters: const [BirthDateInputFormatter()],
           textInputAction: TextInputAction.next,
         ),
         const SizedBox(height: 10),
@@ -108,8 +191,20 @@ class _RegisterPersonalScreenState extends State<RegisterPersonalScreen> {
 // Tela "Cadrastrar 2" do AppAgendamento: Cadastro, etapa 2 de 2 (Figma node 20:128).
 
 class RegisterAccessScreen extends StatefulWidget {
-  const RegisterAccessScreen({super.key, this.onBack, this.onFinish});
+  const RegisterAccessScreen({
+    super.key,
+    this.name = '',
+    this.cpf = '',
+    this.birthDate = '',
+    this.sex,
+    this.onBack,
+    this.onFinish,
+  });
 
+  final String name;
+  final String cpf;
+  final String birthDate;
+  final String? sex;
   final VoidCallback? onBack;
 
   /// Toque em "Concluir" (só é chamado quando as senhas coincidem).
@@ -124,6 +219,7 @@ class _RegisterAccessScreenState extends State<RegisterAccessScreen> {
   final _phone = TextEditingController();
   final _password = TextEditingController();
   final _confirmPassword = TextEditingController();
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -134,7 +230,7 @@ class _RegisterAccessScreenState extends State<RegisterAccessScreen> {
     super.dispose();
   }
 
-  void _finish() {
+  Future<void> _finish() async {
     if (_password.text != _confirmPassword.text) {
       ScaffoldMessenger.of(
         context,
@@ -142,11 +238,64 @@ class _RegisterAccessScreenState extends State<RegisterAccessScreen> {
       return;
     }
 
-    widget.onFinish?.call(
-      _email.text.trim(),
-      _phone.text.trim(),
-      _password.text,
+    if (_isSubmitting) return;
+    final email = _email.text.trim().toLowerCase();
+    final phone = _phone.text.trim();
+    final cpf = widget.cpf.replaceAll(RegExp(r'\D'), '');
+    final birthDate = _birthDateToIso(widget.birthDate);
+    final personalDataError = _personalDataError(
+      name: widget.name,
+      cpf: cpf,
+      birthDate: widget.birthDate,
     );
+    if (personalDataError != null || email.isEmpty || birthDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            personalDataError ??
+                (email.isEmpty
+                    ? 'Informe seu e-mail.'
+                    : 'Informe uma data válida no formato DD/MM/AAAA.'),
+          ),
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+    try {
+      final response = await supabase.auth.signUp(
+        email: email,
+        password: _password.text,
+        data: {
+          'nome': widget.name.trim(),
+          'telefone': phone,
+          'data_nascimento': birthDate,
+          'cpf': cpf,
+          'sexo': widget.sex,
+          'tipo': 'paciente',
+        },
+      );
+      if (!mounted) return;
+      if (response.session == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'O Supabase ainda exige confirmação do e-mail. Para entrar direto, desative “Confirm email” em Authentication > Sign In / Providers > Email no painel do Supabase.',
+            ),
+          ),
+        );
+        return;
+      }
+      widget.onFinish?.call(email, phone, _password.text);
+    } on AuthException catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(error.message)));
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
   }
 
   @override
@@ -154,8 +303,8 @@ class _RegisterAccessScreenState extends State<RegisterAccessScreen> {
     return AuthScaffold(
       onBack: widget.onBack,
       footer: AuthPrimaryButton(
-        label: 'Concluir',
-        onPressed: _finish,
+        label: _isSubmitting ? 'Criando conta...' : 'Concluir',
+        onPressed: _isSubmitting ? null : _finish,
       ),
       children: [
         const SizedBox(height: 8),

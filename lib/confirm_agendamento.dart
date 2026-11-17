@@ -36,6 +36,8 @@ class AppointmentSummary {
     required this.clinicName,
     required this.clinicAddress,
     required this.price,
+    this.consultationId,
+    this.scheduledAt,
     this.photoAsset,
   });
 
@@ -46,6 +48,8 @@ class AppointmentSummary {
   final String clinicName;
   final String clinicAddress;
   final String price; // "R$ 320"
+  final String? consultationId;
+  final DateTime? scheduledAt;
   final String? photoAsset;
 
   static const sample = AppointmentSummary(
@@ -95,8 +99,13 @@ class ConfirmAppointmentScreen extends StatefulWidget {
   const ConfirmAppointmentScreen({
     super.key,
     this.appointment = AppointmentSummary.sample,
-    this.holder = const PatientOption(name: 'Maria', relation: 'Titular · Você'),
-    this.dependents = const [PatientOption(name: 'Pedro', relation: 'Filho · 8 anos')],
+    this.holder = const PatientOption(
+      name: 'Maria',
+      relation: 'Titular · Você',
+    ),
+    this.dependents = const [
+      PatientOption(name: 'Pedro', relation: 'Filho · 8 anos'),
+    ],
     this.insurancePlans = const ['Unimed · Nacional'],
     this.initialCardNumber = '0000 1234 5678 90',
     this.onBack,
@@ -118,18 +127,21 @@ class ConfirmAppointmentScreen extends StatefulWidget {
   final ValueChanged<AppointmentConfirmation>? onConfirm;
 
   @override
-  State<ConfirmAppointmentScreen> createState() => _ConfirmAppointmentScreenState();
+  State<ConfirmAppointmentScreen> createState() =>
+      _ConfirmAppointmentScreenState();
 }
 
 class _ConfirmAppointmentScreenState extends State<ConfirmAppointmentScreen> {
   bool _forSelf = true;
   Coverage _coverage = Coverage.insurance;
   PaymentMethod _payment = PaymentMethod.pix;
-  late PatientOption? _dependent =
-      widget.dependents.isEmpty ? null : widget.dependents.first;
+  late PatientOption? _dependent = widget.dependents.isEmpty
+      ? null
+      : widget.dependents.first;
   late String _plan = widget.insurancePlans.first;
-  late final TextEditingController _card =
-      TextEditingController(text: widget.initialCardNumber);
+  late final TextEditingController _card = TextEditingController(
+    text: widget.initialCardNumber,
+  );
 
   @override
   void dispose() {
@@ -144,7 +156,9 @@ class _ConfirmAppointmentScreenState extends State<ConfirmAppointmentScreen> {
         forSelf: _forSelf || _dependent == null,
         coverage: _coverage,
         insurancePlan: _coverage == Coverage.insurance ? _plan : null,
-        insuranceCardNumber: _coverage == Coverage.insurance ? _card.text.trim() : null,
+        insuranceCardNumber: _coverage == Coverage.insurance
+            ? _card.text.trim()
+            : null,
         paymentMethod: _coverage == Coverage.private ? _payment : null,
       ),
     );
@@ -197,7 +211,11 @@ class _ConfirmAppointmentScreenState extends State<ConfirmAppointmentScreen> {
                   ),
                   Text(
                     'Revise os dados antes de confirmar.',
-                    style: GoogleFonts.manrope(fontSize: 12, height: 20 / 12, color: _C.slate500),
+                    style: GoogleFonts.manrope(
+                      fontSize: 12,
+                      height: 20 / 12,
+                      color: _C.slate500,
+                    ),
                   ),
                 ],
               ),
@@ -216,7 +234,10 @@ class _ConfirmAppointmentScreenState extends State<ConfirmAppointmentScreen> {
                   _sectionTitle('Para quem é a consulta?'),
                   const SizedBox(height: 10),
                   _Segmented<bool>(
-                    options: const [(true, 'Para você'), (false, 'Para outra pessoa')],
+                    options: const [
+                      (true, 'Para você'),
+                      (false, 'Para outra pessoa'),
+                    ],
                     value: _forSelf,
                     onChanged: (value) => setState(() => _forSelf = value),
                   ),
@@ -314,7 +335,11 @@ class _ConfirmAppointmentScreenState extends State<ConfirmAppointmentScreen> {
               isExpanded: true,
               borderRadius: BorderRadius.circular(12),
               dropdownColor: Colors.white,
-              icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 22, color: _C.navy),
+              icon: const Icon(
+                Icons.keyboard_arrow_down_rounded,
+                size: 22,
+                color: _C.navy,
+              ),
               style: GoogleFonts.manrope(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
@@ -403,37 +428,41 @@ class _ConfirmAppointmentScreenState extends State<ConfirmAppointmentScreen> {
         const SizedBox(height: 14),
         Text(
           'Pague na clínica, no dia da consulta.',
-          style: GoogleFonts.manrope(fontSize: 11, height: 18 / 11, color: _C.slate500),
+          style: GoogleFonts.manrope(
+            fontSize: 11,
+            height: 18 / 11,
+            color: _C.slate500,
+          ),
         ),
       ],
     );
   }
 
   Widget _sectionTitle(String text) => Text(
-        text,
-        style: GoogleFonts.manrope(
-          fontSize: 16,
-          fontWeight: FontWeight.w700,
-          height: 24 / 16,
-          color: _C.ink,
-        ),
-      );
+    text,
+    style: GoogleFonts.manrope(
+      fontSize: 16,
+      fontWeight: FontWeight.w700,
+      height: 24 / 16,
+      color: _C.ink,
+    ),
+  );
 
   Widget _fieldLabel(String text) => Text(
-        text,
-        style: GoogleFonts.manrope(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          height: 18 / 11,
-          color: _C.slate600,
-        ),
-      );
+    text,
+    style: GoogleFonts.manrope(
+      fontSize: 11,
+      fontWeight: FontWeight.w600,
+      height: 18 / 11,
+      color: _C.slate600,
+    ),
+  );
 
   BoxDecoration _boxDecoration() => BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _C.border),
-      );
+    color: Colors.white,
+    borderRadius: BorderRadius.circular(12),
+    border: Border.all(color: _C.border),
+  );
 }
 
 class _SummaryCard extends StatelessWidget {
@@ -448,7 +477,11 @@ class _SummaryCard extends StatelessWidget {
     final placeholder = Container(
       color: const Color(0xFFE5EEF9),
       alignment: Alignment.center,
-      child: const Icon(Icons.person_rounded, size: 30, color: Color(0xFF356B9C)),
+      child: const Icon(
+        Icons.person_rounded,
+        size: 30,
+        color: Color(0xFF356B9C),
+      ),
     );
 
     return Container(
@@ -473,7 +506,7 @@ class _SummaryCard extends StatelessWidget {
                       : Image.asset(
                           a.photoAsset!,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => placeholder,
+                          errorBuilder: (_, _, _) => placeholder,
                         ),
                 ),
               ),
@@ -493,7 +526,11 @@ class _SummaryCard extends StatelessWidget {
                     ),
                     Text(
                       a.specialtyAndMode,
-                      style: GoogleFonts.manrope(fontSize: 12, height: 20 / 12, color: _C.slate500),
+                      style: GoogleFonts.manrope(
+                        fontSize: 12,
+                        height: 20 / 12,
+                        color: _C.slate500,
+                      ),
                     ),
                   ],
                 ),
@@ -567,7 +604,11 @@ class _SummaryCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             a.clinicAddress,
-            style: GoogleFonts.manrope(fontSize: 11, height: 18 / 11, color: _C.slate500),
+            style: GoogleFonts.manrope(
+              fontSize: 11,
+              height: 18 / 11,
+              color: _C.slate500,
+            ),
           ),
         ],
       ),
@@ -681,8 +722,124 @@ class _PatientBox extends StatelessWidget {
       child: box,
       itemBuilder: (_) => [
         for (final option in options)
-          PopupMenuItem(value: option, child: Text('${option.name} · ${option.relation}')),
+          PopupMenuItem(
+            value: option,
+            child: Text('${option.name} · ${option.relation}'),
+          ),
       ],
+    );
+  }
+}
+
+class AppointmentConfirmationSheet extends StatelessWidget {
+  const AppointmentConfirmationSheet({
+    super.key,
+    required this.appointment,
+    required this.confirmation,
+  });
+
+  final AppointmentSummary appointment;
+  final AppointmentConfirmation confirmation;
+
+  @override
+  Widget build(BuildContext context) {
+    final a = appointment;
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 40,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFDCE3EF),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                width: 56,
+                height: 56,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFE8F7EE),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.check_rounded,
+                  size: 34,
+                  color: Color(0xFF218653),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Agendamento confirmado!',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.manrope(
+                  fontSize: 19,
+                  fontWeight: FontWeight.w800,
+                  color: _C.ink,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '${a.doctorName} · ${confirmation.patient.name}',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.manrope(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: _C.slate600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '${a.dateLabel} · ${a.timeLabel}',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.manrope(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: _C.navy,
+                ),
+              ),
+              Text(
+                a.clinicName,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.manrope(fontSize: 12, color: _C.slate500),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                height: 44,
+                child: FilledButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: _C.navy,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: Text(
+                    'Voltar para o início',
+                    style: GoogleFonts.manrope(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

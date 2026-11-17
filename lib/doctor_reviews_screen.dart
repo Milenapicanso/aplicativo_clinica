@@ -40,15 +40,13 @@ const _sampleReviews = [
     author: 'Mariana S.',
     date: '12 nov. 2026',
     mode: 'Consulta presencial',
-    comment:
-        'Atenciosa e muito clara nas explicações. Saí da consulta entendendo melhor os cuidados com meu coração.',
+    comment: 'Atenciosa e muito clara nas explicações. Saí da consulta entendendo melhor os cuidados com meu coração.',
   ),
   PatientReview(
     author: 'João P.',
     date: '10 nov. 2026',
     mode: 'Consulta presencial',
-    comment:
-        'Consulta tranquila, sem pressa. A doutora ouviu minhas dúvidas e explicou cada orientação.',
+    comment: 'Consulta tranquila, sem pressa. A doutora ouviu minhas dúvidas e explicou cada orientação.',
   ),
 ];
 
@@ -127,48 +125,62 @@ class DoctorReviewsScreen extends StatelessWidget {
                     ),
                   ),
                   Container(
-                  width: double.infinity,
-                  padding: EdgeInsets.fromLTRB(24, 24, 24, 24 + MediaQuery.of(context).padding.bottom),
-                  decoration: const BoxDecoration(
-                    color: _C.panel,
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(40)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _title('Informações profissionais', 18),
-                      const SizedBox(height: 14),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _InfoCard(label: 'CRM', value: crm ?? 'Não informado'),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _InfoCard(
-                              label: 'Anos de experiência',
-                              value: yearsOfExperience ?? 'Não informado',
-                            ),
-                          ),
-                        ],
+                    width: double.infinity,
+                    padding: EdgeInsets.fromLTRB(
+                      24,
+                      24,
+                      24,
+                      24 + MediaQuery.of(context).padding.bottom,
+                    ),
+                    decoration: const BoxDecoration(
+                      color: _C.panel,
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(40),
                       ),
-                      const SizedBox(height: 12),
-                      _SpecialtiesCard(specialties: specialties),
-                      const SizedBox(height: 24),
-                      _title('Avaliações dos pacientes', 18),
-                      const SizedBox(height: 16),
-                      _RatingSummary(rating: rating, distribution: distribution, total: _total),
-                      const SizedBox(height: 22),
-                      _title('Comentários dos pacientes', 17),
-                      const SizedBox(height: 16),
-                      for (final review in reviews)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 14),
-                          child: _ReviewCard(review: review),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _title('Informações profissionais', 18),
+                        const SizedBox(height: 14),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _InfoCard(
+                                label: 'CRM',
+                                value: crm ?? 'Não informado',
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _InfoCard(
+                                label: 'Anos de experiência',
+                                value: yearsOfExperience ?? 'Não informado',
+                              ),
+                            ),
+                          ],
                         ),
-                    ],
+                        const SizedBox(height: 12),
+                        _SpecialtiesCard(specialties: specialties),
+                        const SizedBox(height: 24),
+                        _title('Avaliações dos pacientes', 18),
+                        const SizedBox(height: 16),
+                        _RatingSummary(
+                          rating: rating,
+                          distribution: distribution,
+                          total: _total,
+                        ),
+                        const SizedBox(height: 22),
+                        _title('Comentários dos pacientes', 17),
+                        const SizedBox(height: 16),
+                        for (final review in reviews)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 14),
+                            child: _ReviewCard(review: review),
+                          ),
+                      ],
+                    ),
                   ),
-                ),
                 ],
               ),
             ],
@@ -179,14 +191,14 @@ class DoctorReviewsScreen extends StatelessWidget {
   }
 
   static Widget _title(String text, double size) => Text(
-        text,
-        style: GoogleFonts.manrope(
-          fontSize: size,
-          fontWeight: FontWeight.w700,
-          height: 1.45,
-          color: _C.ink,
-        ),
-      );
+    text,
+    style: GoogleFonts.manrope(
+      fontSize: size,
+      fontWeight: FontWeight.w700,
+      height: 1.45,
+      color: _C.ink,
+    ),
+  );
 }
 
 class _Header extends StatelessWidget {
@@ -214,7 +226,9 @@ class _Header extends StatelessWidget {
       width: double.infinity,
       clipBehavior: Clip.hardEdge,
       decoration: const BoxDecoration(
-        gradient: LinearGradient(colors: [Color(0xFF3A9AFF), Color(0xFF261CC1)]),
+        gradient: LinearGradient(
+          colors: [Color(0xFF3A9AFF), Color(0xFF261CC1)],
+        ),
       ),
       child: Stack(
         children: [
@@ -234,7 +248,11 @@ class _Header extends StatelessWidget {
                 child: const SizedBox(
                   width: 40,
                   height: 40,
-                  child: Icon(Icons.chevron_left_rounded, size: 24, color: _C.blue),
+                  child: Icon(
+                    Icons.chevron_left_rounded,
+                    size: 24,
+                    color: _C.blue,
+                  ),
                 ),
               ),
             ),
@@ -345,13 +363,13 @@ class _Header extends StatelessWidget {
   }
 
   Widget _halo(double size, double opacity) => Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Colors.white.withOpacity(opacity),
-        ),
-      );
+    width: size,
+    height: size,
+    decoration: BoxDecoration(
+      shape: BoxShape.circle,
+      color: Colors.white.withValues(alpha: opacity),
+    ),
+  );
 }
 
 class _InfoCard extends StatelessWidget {
@@ -527,7 +545,11 @@ class _RatingSummary extends StatelessWidget {
                 const SizedBox(height: 12),
                 Text(
                   '$total avaliações',
-                  style: GoogleFonts.manrope(fontSize: 12, height: 20 / 12, color: _C.slate600),
+                  style: GoogleFonts.manrope(
+                    fontSize: 12,
+                    height: 20 / 12,
+                    color: _C.slate600,
+                  ),
                 ),
               ],
             ),
@@ -539,7 +561,9 @@ class _RatingSummary extends StatelessWidget {
                   _DistributionRow(
                     stars: stars,
                     count: distribution[stars] ?? 0,
-                    fraction: total == 0 ? 0 : (distribution[stars] ?? 0) / total,
+                    fraction: total == 0
+                        ? 0
+                        : (distribution[stars] ?? 0) / total,
                   ),
               ],
             ),
@@ -635,7 +659,11 @@ class _ReviewCard extends StatelessWidget {
               ),
               Text(
                 review.date,
-                style: GoogleFonts.manrope(fontSize: 11, height: 20 / 11, color: _C.slate500),
+                style: GoogleFonts.manrope(
+                  fontSize: 11,
+                  height: 20 / 11,
+                  color: _C.slate500,
+                ),
               ),
             ],
           ),
@@ -666,7 +694,11 @@ class _ReviewCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             review.comment,
-            style: GoogleFonts.manrope(fontSize: 12, height: 20 / 12, color: _C.slate600),
+            style: GoogleFonts.manrope(
+              fontSize: 12,
+              height: 20 / 12,
+              color: _C.slate600,
+            ),
           ),
         ],
       ),

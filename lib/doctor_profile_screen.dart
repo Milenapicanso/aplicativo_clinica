@@ -85,12 +85,11 @@ class DoctorProfile {
       'Seu convênio está entre os aceitos.',
     ],
     paymentMethods: 'Pix, cartão de débito ou crédito em até 2x.',
-    returnPolicy: 'Retorno sem custo em até 30 dias, para o mesmo motivo da consulta.',
-    cancellationPolicy:
-        'Cancele ou remarque sem custo até 24h antes. Após esse prazo, fale com a clínica para consultar as condições.',
+    returnPolicy:
+        'Retorno sem custo em até 30 dias, para o mesmo motivo da consulta.',
+    cancellationPolicy: 'Cancele ou remarque sem custo até 24h antes. Após esse prazo, fale com a clínica para consultar as condições.',
     documents: 'Documento com foto, carteirinha do convênio (se usar) e exames anteriores.',
-    preparation:
-        'Não é necessário jejum para a consulta. Caso haja exames, confirme o preparo com a clínica.',
+    preparation: 'Não é necessário jejum para a consulta. Caso haja exames, confirme o preparo com a clínica.',
   );
 }
 
@@ -107,8 +106,8 @@ class DoctorProfileScreen extends StatefulWidget {
     this.onSeeReviews,
     this.onSeeLocation,
     this.onSchedule,
-  })  : month = month ?? DateTime(2026, 11),
-        availableDays = availableDays ?? const {14, 16, 18, 20, 23, 25, 27, 30};
+  }) : month = month ?? DateTime(2026, 11),
+       availableDays = availableDays ?? const {14, 16, 18, 20, 23, 25, 27, 30};
 
   final DoctorProfile doctor;
 
@@ -138,12 +137,27 @@ class DoctorProfileScreen extends StatefulWidget {
 
 class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
   static const _months = [
-    'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
-    'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
+    'janeiro',
+    'fevereiro',
+    'março',
+    'abril',
+    'maio',
+    'junho',
+    'julho',
+    'agosto',
+    'setembro',
+    'outubro',
+    'novembro',
+    'dezembro',
   ];
   static const _weekdayNames = [
-    'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira',
-    'Sexta-feira', 'Sábado', 'Domingo',
+    'Segunda-feira',
+    'Terça-feira',
+    'Quarta-feira',
+    'Quinta-feira',
+    'Sexta-feira',
+    'Sábado',
+    'Domingo',
   ];
 
   late int _selectedDay = widget.availableDays.contains(14)
@@ -154,7 +168,11 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final d = widget.doctor;
-    final selectedDate = DateTime(widget.month.year, widget.month.month, _selectedDay);
+    final selectedDate = DateTime(
+      widget.month.year,
+      widget.month.month,
+      _selectedDay,
+    );
 
     return Scaffold(
       backgroundColor: _C.background,
@@ -191,17 +209,39 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                               child: Row(
                                 children: [
                                   const SizedBox(width: 0),
-                                  const Icon(Icons.location_on_outlined, size: 18, color: _C.blue),
+                                  const Icon(
+                                    Icons.location_on_outlined,
+                                    size: 18,
+                                    color: _C.blue,
+                                  ),
                                   const SizedBox(width: 8),
-                                  _text('Ver localização e como chegar', 12, FontWeight.w600, _C.blue, 22),
+                                  _text(
+                                    'Ver localização e como chegar',
+                                    12,
+                                    FontWeight.w600,
+                                    _C.blue,
+                                    22,
+                                  ),
                                 ],
                               ),
                             ),
                           ),
                           const SizedBox(height: 4),
-                          _text('Telefone da clínica: ${d.phone}', 12, FontWeight.w400, _C.slate600, 20),
+                          _text(
+                            'Telefone da clínica: ${d.phone}',
+                            12,
+                            FontWeight.w400,
+                            _C.slate600,
+                            20,
+                          ),
                           const SizedBox(height: 13),
-                          _text(d.serviceType, 13, FontWeight.w600, const Color(0xFF27C840), 22),
+                          _text(
+                            d.serviceType,
+                            13,
+                            FontWeight.w600,
+                            const Color(0xFF27C840),
+                            22,
+                          ),
                           const SizedBox(height: 5),
                           for (final line in d.serviceNotes)
                             _text(line, 12, FontWeight.w400, _C.slate600, 20),
@@ -217,21 +257,57 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _text(d.consultationLabel, 12, FontWeight.w500, _C.slate500, 20),
+                          _text(
+                            d.consultationLabel,
+                            12,
+                            FontWeight.w500,
+                            _C.slate500,
+                            20,
+                          ),
                           const SizedBox(height: 5),
                           _text(d.price, 26, FontWeight.w700, _C.ink, 34),
                           const SizedBox(height: 12),
-                          _text('Convênios aceitos', 12, FontWeight.w600, _C.slate700, 20),
+                          _text(
+                            'Convênios aceitos',
+                            12,
+                            FontWeight.w600,
+                            _C.slate700,
+                            20,
+                          ),
                           for (final line in d.acceptedInsurances)
                             _text(line, 12, FontWeight.w400, _C.green, 20),
                           const SizedBox(height: 7),
-                          _text('Formas de pagamento', 12, FontWeight.w600, _C.slate700, 20),
+                          _text(
+                            'Formas de pagamento',
+                            12,
+                            FontWeight.w600,
+                            _C.slate700,
+                            20,
+                          ),
                           const SizedBox(height: 3),
-                          _text(d.paymentMethods, 12, FontWeight.w400, _C.slate600, 20),
+                          _text(
+                            d.paymentMethods,
+                            12,
+                            FontWeight.w400,
+                            _C.slate600,
+                            20,
+                          ),
                           const SizedBox(height: 13),
-                          _text('Política de retorno', 12, FontWeight.w600, _C.slate700, 20),
+                          _text(
+                            'Política de retorno',
+                            12,
+                            FontWeight.w600,
+                            _C.slate700,
+                            20,
+                          ),
                           const SizedBox(height: 3),
-                          _text(d.returnPolicy, 12, FontWeight.w400, _C.slate600, 20),
+                          _text(
+                            d.returnPolicy,
+                            12,
+                            FontWeight.w400,
+                            _C.slate600,
+                            20,
+                          ),
                         ],
                       ),
                     ),
@@ -239,7 +315,10 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                   const _Gap(),
                   _Section(
                     title: 'Agenda',
-                    child: _Card(radius: 18, child: _buildCalendar(selectedDate)),
+                    child: _Card(
+                      radius: 18,
+                      child: _buildCalendar(selectedDate),
+                    ),
                   ),
                   const _Gap(),
                   _Section(
@@ -255,14 +334,32 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                           children: [
                             SizedBox(
                               width: 102,
-                              child: _text('★ ${d.rating}', 25, FontWeight.w700, const Color(0xFF9B6A00), 34),
+                              child: _text(
+                                '★ ${d.rating}',
+                                25,
+                                FontWeight.w700,
+                                const Color(0xFF9B6A00),
+                                34,
+                              ),
                             ),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  _text('${d.reviewCount} avaliações', 13, FontWeight.w600, _C.slate700, 22),
-                                  _text('Ler comentários dos pacientes  →', 11, FontWeight.w600, _C.blue, 20),
+                                  _text(
+                                    '${d.reviewCount} avaliações',
+                                    13,
+                                    FontWeight.w600,
+                                    _C.slate700,
+                                    22,
+                                  ),
+                                  _text(
+                                    'Ler comentários dos pacientes  →',
+                                    11,
+                                    FontWeight.w600,
+                                    _C.blue,
+                                    20,
+                                  ),
                                 ],
                               ),
                             ),
@@ -279,29 +376,72 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _text('Cancelamento e remarcação', 13, FontWeight.w600, _C.slate700, 22),
+                          _text(
+                            'Cancelamento e remarcação',
+                            13,
+                            FontWeight.w600,
+                            _C.slate700,
+                            22,
+                          ),
                           const SizedBox(height: 7),
-                          _text(d.cancellationPolicy, 12, FontWeight.w400, _C.slate600, 20),
+                          _text(
+                            d.cancellationPolicy,
+                            12,
+                            FontWeight.w400,
+                            _C.slate600,
+                            20,
+                          ),
                           const SizedBox(height: 14),
-                          _text('Documentos para levar', 13, FontWeight.w600, _C.slate700, 22),
+                          _text(
+                            'Documentos para levar',
+                            13,
+                            FontWeight.w600,
+                            _C.slate700,
+                            22,
+                          ),
                           const SizedBox(height: 7),
-                          _text(d.documents, 12, FontWeight.w400, _C.slate600, 20),
+                          _text(
+                            d.documents,
+                            12,
+                            FontWeight.w400,
+                            _C.slate600,
+                            20,
+                          ),
                           const SizedBox(height: 14),
-                          _text('Preparo', 13, FontWeight.w600, _C.slate700, 22),
+                          _text(
+                            'Preparo',
+                            13,
+                            FontWeight.w600,
+                            _C.slate700,
+                            22,
+                          ),
                           const SizedBox(height: 7),
-                          _text(d.preparation, 12, FontWeight.w400, _C.slate600, 20),
+                          _text(
+                            d.preparation,
+                            12,
+                            FontWeight.w400,
+                            _C.slate600,
+                            20,
+                          ),
                         ],
                       ),
                     ),
                   ),
                   const SizedBox(height: 20),
-                  _text('Perfil, registros e condições ilustrativos.', 11, FontWeight.w400, _C.slate500, 20),
+                  _text(
+                    'Perfil, registros e condições ilustrativos.',
+                    11,
+                    FontWeight.w400,
+                    _C.slate500,
+                    20,
+                  ),
                 ],
               ),
             ),
             _BottomBar(
               acceptsInsurance: widget.acceptsUserInsurance,
-              onPressed: () => widget.onSchedule?.call(selectedDate, _selectedTime),
+              onPressed: () =>
+                  widget.onSchedule?.call(selectedDate, _selectedTime),
             ),
           ],
         ),
@@ -312,7 +452,9 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
   Widget _buildCalendar(DateTime selectedDate) {
     final month = widget.month;
     final daysInMonth = DateTime(month.year, month.month + 1, 0).day;
-    final offset = DateTime(month.year, month.month, 1).weekday - 1; // semana começa na segunda
+    final offset =
+        DateTime(month.year, month.month, 1).weekday -
+        1; // semana começa na segunda
     final rows = ((offset + daysInMonth) / 7).ceil();
     const headers = ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'];
 
@@ -321,7 +463,9 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
       final available = widget.availableDays.contains(day);
       final selected = day == _selectedDay;
 
-      final Color? bg = selected ? _C.navy : (available ? const Color(0xFFEEF2FF) : null);
+      final Color? bg = selected
+          ? _C.navy
+          : (available ? const Color(0xFFEEF2FF) : null);
       final Color fg = selected
           ? Colors.white
           : (available ? _C.navy : const Color(0xFF9AA3B0));
@@ -330,20 +474,25 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
         child: GestureDetector(
           onTap: available
               ? () => setState(() {
-                    _selectedDay = day;
-                    _selectedTime = null;
-                  })
+                  _selectedDay = day;
+                  _selectedTime = null;
+                })
               : null,
           child: Container(
             width: 34,
             height: 27,
             alignment: Alignment.center,
-            decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(10),
+            ),
             child: Text(
               '$day',
               style: GoogleFonts.manrope(
                 fontSize: 12,
-                fontWeight: available || selected ? FontWeight.w700 : FontWeight.w400,
+                fontWeight: available || selected
+                    ? FontWeight.w700
+                    : FontWeight.w400,
                 color: fg,
               ),
             ),
@@ -357,7 +506,13 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _text('${_capitalize(_months[month.month - 1])} ${month.year}', 16, FontWeight.w700, _C.ink, 24),
+        _text(
+          '${_capitalize(_months[month.month - 1])} ${month.year}',
+          16,
+          FontWeight.w700,
+          _C.ink,
+          24,
+        ),
         const SizedBox(height: 5),
         _text('Dias disponíveis em azul', 11, FontWeight.w400, _C.slate500, 18),
         const SizedBox(height: 7),
@@ -365,7 +520,9 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
           children: [
             for (final h in headers)
               Expanded(
-                child: Center(child: _text(h, 11, FontWeight.w600, _C.slate500, 20)),
+                child: Center(
+                  child: _text(h, 11, FontWeight.w600, _C.slate500, 20),
+                ),
               ),
           ],
         ),
@@ -373,7 +530,8 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
         for (var r = 0; r < rows; r++) ...[
           Row(
             children: [
-              for (var c = 0; c < 7; c++) Expanded(child: cell(r * 7 + c - offset + 1)),
+              for (var c = 0; c < 7; c++)
+                Expanded(child: cell(r * 7 + c - offset + 1)),
             ],
           ),
           const SizedBox(height: 2),
@@ -398,10 +556,14 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                     height: 38,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: _selectedTime == widget.times[i] ? _C.navy : const Color(0xFFF0F4FC),
+                      color: _selectedTime == widget.times[i]
+                          ? _C.navy
+                          : const Color(0xFFF0F4FC),
                       borderRadius: BorderRadius.circular(11),
                       border: Border.all(
-                        color: _selectedTime == widget.times[i] ? _C.navy : const Color(0xFFCFD9EC),
+                        color: _selectedTime == widget.times[i]
+                            ? _C.navy
+                            : const Color(0xFFCFD9EC),
                       ),
                     ),
                     child: Text(
@@ -409,7 +571,9 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                       style: GoogleFonts.manrope(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        color: _selectedTime == widget.times[i] ? Colors.white : _C.navy,
+                        color: _selectedTime == widget.times[i]
+                            ? Colors.white
+                            : _C.navy,
                       ),
                     ),
                   ),
@@ -419,15 +583,28 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
           ],
         ),
         const SizedBox(height: 14),
-        _text('Horários de Brasília · atendimento presencial', 11, FontWeight.w400, _C.slate500, 20),
+        _text(
+          'Horários de Brasília · atendimento presencial',
+          11,
+          FontWeight.w400,
+          _C.slate500,
+          20,
+        ),
       ],
     );
   }
 
-  static String _capitalize(String s) => s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
+  static String _capitalize(String s) =>
+      s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
 }
 
-Widget _text(String value, double size, FontWeight weight, Color color, double lineHeight) {
+Widget _text(
+  String value,
+  double size,
+  FontWeight weight,
+  Color color,
+  double lineHeight,
+) {
   return Text(
     value,
     style: GoogleFonts.manrope(
@@ -529,7 +706,11 @@ class _Card extends StatelessWidget {
 }
 
 class _IdentityCard extends StatelessWidget {
-  const _IdentityCard({required this.doctor, this.onSeeProfile, this.onSeeReviews});
+  const _IdentityCard({
+    required this.doctor,
+    this.onSeeProfile,
+    this.onSeeReviews,
+  });
 
   final DoctorProfile doctor;
   final VoidCallback? onSeeProfile;
@@ -540,7 +721,11 @@ class _IdentityCard extends StatelessWidget {
     final placeholder = Container(
       color: const Color(0xFFE5EEF9),
       alignment: Alignment.center,
-      child: const Icon(Icons.person_rounded, size: 40, color: Color(0xFF356B9C)),
+      child: const Icon(
+        Icons.person_rounded,
+        size: 40,
+        color: Color(0xFF356B9C),
+      ),
     );
 
     return _Card(
@@ -561,7 +746,7 @@ class _IdentityCard extends StatelessWidget {
                       : Image.asset(
                           doctor.photoAsset!,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => placeholder,
+                          errorBuilder: (_, _, _) => placeholder,
                         ),
                 ),
               ),
@@ -573,7 +758,13 @@ class _IdentityCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     _text(doctor.name, 18, FontWeight.w700, _C.ink, 25),
                     const SizedBox(height: 7),
-                    _text(doctor.specialty, 14, FontWeight.w500, _C.slate600, 22),
+                    _text(
+                      doctor.specialty,
+                      14,
+                      FontWeight.w500,
+                      _C.slate600,
+                      22,
+                    ),
                     const SizedBox(height: 0),
                     InkWell(
                       onTap: onSeeReviews,
@@ -643,7 +834,9 @@ class _BottomBar extends StatelessWidget {
             child: Ink(
               height: 50,
               decoration: const BoxDecoration(
-                gradient: LinearGradient(colors: [Color(0xFFFFD500), Color(0xFFFDC500)]),
+                gradient: LinearGradient(
+                  colors: [Color(0xFFFFD500), Color(0xFFFDC500)],
+                ),
               ),
               child: InkWell(
                 onTap: onPressed,

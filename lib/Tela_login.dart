@@ -1,9 +1,9 @@
-// Tela "Tela Login" do AppAgendamento (Figma node 2:30).
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show AuthException;
 
 import 'auth.dart';
+import 'supabase_client.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({
@@ -33,6 +33,34 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _email = TextEditingController();
   final _password = TextEditingController();
+  bool _isSigningIn = false;
+
+  Future<void> _signIn() async {
+    if (_isSigningIn) return;
+    setState(() => _isSigningIn = true);
+
+    try {
+      final email = _email.text.trim().toLowerCase();
+      await supabase.auth.signInWithPassword(
+        email: email,
+        password: _password.text,
+      );
+      if (mounted) {
+        widget.onSubmit?.call(email, _password.text);
+      }
+    } on AuthException catch (error) {
+      if (mounted) {
+        final message =
+            error.message.toLowerCase().contains('email not confirmed')
+            ? 'Este e-mail ainda não foi confirmado no Supabase. Confirme-o ou desative “Confirm email” no painel.'
+            : error.message;
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(message)));
+      }
+    } finally {
+      if (mounted) setState(() => _isSigningIn = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -81,9 +109,8 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         const SizedBox(height: 34),
         AuthPrimaryButton(
-          label: 'Entrar',
-          onPressed: () =>
-              widget.onSubmit?.call(_email.text.trim(), _password.text),
+          label: _isSigningIn ? 'Entrando...' : 'Entrar',
+          onPressed: _isSigningIn ? null : _signIn,
         ),
         const SizedBox(height: 28),
         _OrDivider(),

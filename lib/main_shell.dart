@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'custom_bottom_nav.dart';
 import 'favorites_screen.dart';
 import 'notifications_screen.dart';
@@ -7,11 +8,13 @@ import 'profile_screen.dart';
 class MainShell extends StatefulWidget {
   final Widget homeScreen;
   final int initialIndex;
+  final VoidCallback? onSignOut;
 
   const MainShell({
     super.key,
     required this.homeScreen,
     this.initialIndex = 0,
+    this.onSignOut,
   });
 
   @override
@@ -33,15 +36,12 @@ class _MainShellState extends State<MainShell> {
       widget.homeScreen,
       const NotificationsScreen(),
       const FavoritesScreen(),
-      const ProfileScreen(),
+      ProfileScreen(onSignOut: widget.onSignOut),
     ];
 
     return Scaffold(
       extendBody: true,
-      body: IndexedStack(
-        index: _currentIndex,
-        children: pages,
-      ),
+      body: IndexedStack(index: _currentIndex, children: pages),
       bottomNavigationBar: CustomBottomNav(
         currentIndex: _currentIndex,
         onTap: (index) => setState(() => _currentIndex = index),

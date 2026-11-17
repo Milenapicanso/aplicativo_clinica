@@ -19,44 +19,44 @@ class AuthColors {
 
 class AuthText {
   static TextStyle title([double size = 26]) => GoogleFonts.manrope(
-        fontSize: size,
-        fontWeight: FontWeight.w600,
-        height: 1.5,
-        color: AuthColors.textPrimary,
-      );
+    fontSize: size,
+    fontWeight: FontWeight.w600,
+    height: 1.5,
+    color: AuthColors.textPrimary,
+  );
 
   static TextStyle subtitle([double size = 13]) => GoogleFonts.poppins(
-        fontSize: size,
-        fontWeight: FontWeight.w400,
-        height: 1.5,
-        color: AuthColors.textSecondary,
-      );
+    fontSize: size,
+    fontWeight: FontWeight.w400,
+    height: 1.5,
+    color: AuthColors.textSecondary,
+  );
 
   static TextStyle label() => GoogleFonts.poppins(
-        fontSize: 14,
-        fontWeight: FontWeight.w500,
-        height: 1.5,
-        color: AuthColors.textPrimary,
-      );
+    fontSize: 14,
+    fontWeight: FontWeight.w500,
+    height: 1.5,
+    color: AuthColors.textPrimary,
+  );
 
   static TextStyle input() => GoogleFonts.poppins(
-        fontSize: 13,
-        fontWeight: FontWeight.w400,
-        color: AuthColors.textPrimary,
-      );
+    fontSize: 13,
+    fontWeight: FontWeight.w400,
+    color: AuthColors.textPrimary,
+  );
 
   static TextStyle hint() => GoogleFonts.poppins(
-        fontSize: 13,
-        fontWeight: FontWeight.w400,
-        color: AuthColors.hint,
-      );
+    fontSize: 13,
+    fontWeight: FontWeight.w400,
+    color: AuthColors.hint,
+  );
 
   static TextStyle link(double size) => GoogleFonts.poppins(
-        fontSize: size,
-        fontWeight: FontWeight.w500,
-        height: 1.5,
-        color: AuthColors.primary,
-      );
+    fontSize: size,
+    fontWeight: FontWeight.w500,
+    height: 1.5,
+    color: AuthColors.primary,
+  );
 }
 
 /// Fundo azul com o painel branco arredondado, o "puxador" no topo
@@ -163,9 +163,17 @@ class AuthHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(title, textAlign: TextAlign.center, style: AuthText.title(titleSize)),
+        Text(
+          title,
+          textAlign: TextAlign.center,
+          style: AuthText.title(titleSize),
+        ),
         const SizedBox(height: 6),
-        Text(subtitle, textAlign: TextAlign.center, style: AuthText.subtitle(subtitleSize)),
+        Text(
+          subtitle,
+          textAlign: TextAlign.center,
+          style: AuthText.subtitle(subtitleSize),
+        ),
         if (stepLabel != null) ...[
           const SizedBox(height: 17),
           Text(
@@ -196,14 +204,14 @@ class StepProgress extends StatelessWidget {
     final second = step == 1 ? AuthColors.stepPending : AuthColors.primary;
 
     Widget bar(Color color) => Expanded(
-          child: Container(
-            height: 5,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-        );
+      child: Container(
+        height: 5,
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(2),
+        ),
+      ),
+    );
 
     return Row(children: [bar(first), const SizedBox(width: 10), bar(second)]);
   }
@@ -219,6 +227,7 @@ class AuthField extends StatefulWidget {
     this.controller,
     this.keyboardType,
     this.textInputAction,
+    this.inputFormatters,
     this.isPassword = false,
   });
 
@@ -228,6 +237,7 @@ class AuthField extends StatefulWidget {
   final TextEditingController? controller;
   final TextInputType? keyboardType;
   final TextInputAction? textInputAction;
+  final List<TextInputFormatter>? inputFormatters;
   final bool isPassword;
 
   @override
@@ -251,6 +261,7 @@ class _AuthFieldState extends State<AuthField> {
               controller: widget.controller,
               keyboardType: widget.keyboardType,
               textInputAction: widget.textInputAction,
+              inputFormatters: widget.inputFormatters,
               obscureText: widget.isPassword && _obscure,
               style: AuthText.input(),
               cursorColor: AuthColors.primary,

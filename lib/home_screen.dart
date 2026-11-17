@@ -5,6 +5,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'confirm_agendamento.dart';
+
 class _C {
   static const blueDark = Color(0xFF261CC1);
   static const navy = Color(0xFF264763);
@@ -19,7 +21,7 @@ class _SpecialtyData {
   });
 
   final String name;
-  final String asset;
+  final String? asset;
   final IconData fallback;
 }
 
@@ -75,6 +77,8 @@ class HomeScreen extends StatelessWidget {
   const HomeScreen({
     super.key,
     this.userName = 'Maria',
+    this.nextAppointment,
+    this.availableSpecialties = const [],
     this.city,
     this.onSelectCity,
     this.onSearch,
@@ -88,6 +92,8 @@ class HomeScreen extends StatelessWidget {
   });
 
   final String userName;
+  final AppointmentSummary? nextAppointment;
+  final List<String> availableSpecialties;
 
   /// Cidade escolhida. Quando nula, mostra "Selecionar cidade".
   final String? city;
@@ -106,6 +112,9 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final specialties = availableSpecialties
+        .map(_specialtyData)
+        .toList(growable: false);
     return Scaffold(
       backgroundColor: Colors.white,
       bottomNavigationBar: showBottomNav
@@ -158,7 +167,11 @@ class HomeScreen extends StatelessWidget {
                         if (onSeeAllSpecialties != null) {
                           onSeeAllSpecialties!();
                         } else {
-                          _showAllSpecialties(context, onSpecialtyTap);
+                          _showAllSpecialties(
+                            context,
+                            specialties,
+                            onSpecialtyTap,
+                          );
                         }
                       },
                       child: Text(
@@ -175,21 +188,29 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 18),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    for (final specialty in _specialties.take(4))
-                      Expanded(
-                        child: _Specialty(
-                          specialty: specialty,
-                          onTap: onSpecialtyTap,
+              if (specialties.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 26),
+                  child: Text(
+                    'Nenhuma especialidade com horários disponíveis.',
+                  ),
+                )
+              else
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      for (final specialty in specialties.take(4))
+                        Expanded(
+                          child: _Specialty(
+                            specialty: specialty,
+                            onTap: onSpecialtyTap,
+                          ),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
               const SizedBox(height: 33),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 26),
@@ -201,7 +222,10 @@ class HomeScreen extends StatelessWidget {
               const SizedBox(height: 13),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 26),
-                child: _NextAppointmentCard(onDetails: onAppointmentDetails),
+                child: _NextAppointmentCard(
+                  appointment: nextAppointment,
+                  onDetails: onAppointmentDetails,
+                ),
               ),
             ],
           ),
@@ -213,6 +237,7 @@ class HomeScreen extends StatelessWidget {
 
 void _showAllSpecialties(
   BuildContext context,
+  List<_SpecialtyData> specialties,
   ValueChanged<String>? onSpecialtyTap,
 ) {
   showModalBottomSheet<void>(
@@ -287,9 +312,9 @@ void _showAllSpecialties(
                     mainAxisSpacing: 16,
                     childAspectRatio: 0.78,
                   ),
-                  itemCount: _specialties.length,
+                  itemCount: specialties.length,
                   itemBuilder: (context, index) {
-                    final specialty = _specialties[index];
+                    final specialty = specialties[index];
                     return _Specialty(
                       specialty: specialty,
                       onTap: (name) {
@@ -319,6 +344,39 @@ TextStyle _outfit(
   height: lineHeight / size,
   color: color,
 );
+
+_SpecialtyData _specialtyData(String name) {
+  final normalized = _normalizeSpecialty(name);
+  for (final item in _specialties) {
+    final known = _normalizeSpecialty(item.name);
+    if (normalized == known ||
+        normalized.contains(known) ||
+        known.contains(normalized) ||
+        (normalized.contains('gineco') && known.contains('gineco')) ||
+        (normalized.contains('otorrino') && known.contains('otorrino'))) {
+      return _SpecialtyData(
+        name: name,
+        asset: item.asset,
+        fallback: item.fallback,
+      );
+    }
+  }
+  return _SpecialtyData(
+    name: name,
+    asset: null,
+    fallback: Icons.medical_services_outlined,
+  );
+}
+
+String _normalizeSpecialty(String value) => value
+    .toLowerCase()
+    .replaceAll(RegExp('[áàâãä]'), 'a')
+    .replaceAll(RegExp('[éèêë]'), 'e')
+    .replaceAll(RegExp('[íìîï]'), 'i')
+    .replaceAll(RegExp('[óòôõö]'), 'o')
+    .replaceAll(RegExp('[úùûü]'), 'u')
+    .replaceAll('ç', 'c')
+    .trim();
 
 class _Greeting extends StatelessWidget {
   const _Greeting({required this.userName, this.city, this.onSelectCity});
@@ -650,7 +708,7 @@ class _ActionCard extends StatelessWidget {
                   width: 34,
                   height: 29,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.3),
+                    color: Colors.white.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(15),
                   ),
                   child: const Icon(
@@ -697,14 +755,16 @@ class _Specialty extends StatelessWidget {
                 ),
               ],
             ),
-            child: Image.asset(
-              specialty.asset,
-              width: 40,
-              height: 40,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) =>
-                  Icon(specialty.fallback, size: 32, color: _C.navy),
-            ),
+            child: specialty.asset == null
+                ? Icon(specialty.fallback, size: 32, color: _C.navy)
+                : Image.asset(
+                    specialty.asset!,
+                    width: 40,
+                    height: 40,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) =>
+                        Icon(specialty.fallback, size: 32, color: _C.navy),
+                  ),
           ),
           const SizedBox(height: 8),
           Text(
@@ -726,12 +786,14 @@ class _Specialty extends StatelessWidget {
 }
 
 class _NextAppointmentCard extends StatelessWidget {
-  const _NextAppointmentCard({this.onDetails});
+  const _NextAppointmentCard({this.appointment, this.onDetails});
 
+  final AppointmentSummary? appointment;
   final VoidCallback? onDetails;
 
   @override
   Widget build(BuildContext context) {
+    final appointment = this.appointment;
     return Container(
       height: 162,
       decoration: BoxDecoration(
@@ -758,7 +820,14 @@ class _NextAppointmentCard extends StatelessWidget {
                   shape: BoxShape.circle,
                 ),
                 child: Text(
-                  'RL',
+                  appointment == null
+                      ? '—'
+                      : appointment.doctorName
+                            .split(' ')
+                            .take(2)
+                            .map((part) => part.isEmpty ? '' : part[0])
+                            .join()
+                            .toUpperCase(),
                   style: _outfit(
                     15,
                     FontWeight.w600,
@@ -773,7 +842,7 @@ class _NextAppointmentCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Dr. Rafael Lima',
+                      appointment?.doctorName ?? 'Nenhuma consulta agendada',
                       style: _outfit(
                         18,
                         FontWeight.w600,
@@ -782,7 +851,11 @@ class _NextAppointmentCard extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'Cardiologista · Clínica Vida',
+                      appointment == null
+                          ? 'Quando você agendar, ela aparecerá aqui.'
+                          : '${appointment.specialtyAndMode} · ${appointment.clinicName}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.manrope(
                         fontSize: 12,
                         height: 16.2 / 12,
@@ -801,7 +874,9 @@ class _NextAppointmentCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(13),
                 ),
                 child: Text(
-                  'Em 2 dias',
+                  appointment == null
+                      ? 'Disponível'
+                      : _daysUntil(appointment.scheduledAt),
                   style: GoogleFonts.manrope(fontSize: 11, color: Colors.black),
                 ),
               ),
@@ -818,7 +893,9 @@ class _NextAppointmentCard extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Text(
-                'Ter, 17 nov · 16:30',
+                appointment == null
+                    ? 'Nenhum horário marcado'
+                    : _appointmentDateTime(appointment.scheduledAt),
                 style: _outfit(
                   13,
                   FontWeight.w600,
@@ -843,7 +920,7 @@ class _NextAppointmentCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          'Ver detalhes da consulta',
+                          'Mais Informações',
                           textAlign: TextAlign.center,
                           style: _outfit(
                             13,
@@ -867,6 +944,27 @@ class _NextAppointmentCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _daysUntil(DateTime? date) {
+    if (date == null) return 'Agendada';
+    final today = DateTime.now();
+    final days = DateTime(
+      date.year,
+      date.month,
+      date.day,
+    ).difference(DateTime(today.year, today.month, today.day)).inDays;
+    if (days <= 0) return 'Hoje';
+    if (days == 1) return 'Amanhã';
+    return 'Em $days dias';
+  }
+
+  String _appointmentDateTime(DateTime? date) {
+    if (date == null) return 'Horário confirmado';
+    return '${date.day.toString().padLeft(2, '0')}/'
+        '${date.month.toString().padLeft(2, '0')} · '
+        '${date.hour.toString().padLeft(2, '0')}:'
+        '${date.minute.toString().padLeft(2, '0')}';
   }
 }
 

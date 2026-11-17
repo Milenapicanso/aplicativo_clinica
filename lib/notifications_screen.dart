@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show PostgrestException;
+
 import 'app_colors.dart';
+import 'supabase_client.dart';
+import 'supabase_repository.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -10,10 +14,78 @@ class NotificationsScreen extends StatefulWidget {
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
   int _selectedTab = 0; // 0: Todas, 1: Não lidas
-  bool _hasUnread = true;
+  late Future<List<Map<String, dynamic>>> _notifications;
+
+  @override
+  void initState() {
+    super.initState();
+    _notifications = loadNotifications();
+  }
+
+  Future<void> _markRead(String id) async {
+    try {
+      await supabase.from('notificacoes').update({'lida': true}).eq('id', id);
+      if (mounted) setState(() => _notifications = loadNotifications());
+    } on PostgrestException catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(error.message)));
+      }
+    }
+  }
+
+  Future<void> _markAllRead(List<Map<String, dynamic>> rows) async {
+    if (!rows.any((row) => row['lida'] != true)) return;
+    final userId = supabase.auth.currentUser?.id;
+    if (userId == null) return;
+    try {
+      await supabase
+          .from('notificacoes')
+          .update({'lida': true})
+          .eq('paciente_id', userId)
+          .eq('lida', false);
+      if (mounted) setState(() => _notifications = loadNotifications());
+    } on PostgrestException catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(error.message)));
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _notifications,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        if (snapshot.hasError) {
+          return Scaffold(
+            body: Center(
+              child: Text(
+                'Não foi possível carregar notificações: ${snapshot.error}',
+              ),
+            ),
+          );
+        }
+        return _buildNotifications(context, snapshot.data ?? const []);
+      },
+    );
+  }
+
+  Widget _buildNotifications(
+    BuildContext context,
+    List<Map<String, dynamic>> rows,
+  ) {
+    final unread = rows.where((row) => row['lida'] != true).length;
+    final visibleRows = _selectedTab == 0
+        ? rows
+        : rows.where((row) => row['lida'] != true).toList();
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -26,18 +98,29 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               children: [
                 const Text(
                   'Notificações',
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: Colors.black),
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.black,
+                  ),
                 ),
-                if (_hasUnread)
+                if (unread > 0)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.accentYellow,
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Text(
-                      '2',
-                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.darkNavy),
+                    child: Text(
+                      '$unread',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                        color: AppColors.darkNavy,
+                      ),
                     ),
                   ),
               ],
@@ -58,69 +141,84 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               ),
               child: Row(
                 children: [
-                  _buildTab(0, 'Todas'),
-                  _buildTab(1, _hasUnread ? 'Não lidas (2)' : 'Não lidas (0)'),
+                  _buildTab(0, 'Todas (${rows.length})'),
+                  _buildTab(1, 'Não lidas ($unread)'),
                 ],
               ),
             ),
             const SizedBox(height: 24),
 
             // Hoje
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('Hoje', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-                GestureDetector(
-                  onTap: () => setState(() => _hasUnread = false),
-                  child: const Text(
-                    'Marcar todas como lidas',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.primaryBlue),
-                  ),
+            if (unread > 0)
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () => _markAllRead(rows),
+                  child: const Text('Marcar todas como lidas'),
                 ),
+              ),
+            if (visibleRows.isEmpty)
+              const Padding(
+                padding: EdgeInsets.all(24),
+                child: Center(child: Text('Nenhuma notificação por enquanto.')),
+              )
+            else
+              for (var index = 0; index < visibleRows.length; index++) ...[
+                if (index == 0 ||
+                    _dateGroup(visibleRows[index - 1]['criada_em'] as String) !=
+                        _dateGroup(visibleRows[index]['criada_em'] as String))
+                  Text(
+                    _dateGroup(visibleRows[index]['criada_em'] as String),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                const SizedBox(height: 12),
+                _buildNotificationCard(
+                  icon: _iconFor(visibleRows[index]['tipo'] as String? ?? ''),
+                  title:
+                      visibleRows[index]['titulo'] as String? ?? 'Notificação',
+                  description: visibleRows[index]['mensagem'] as String? ?? '',
+                  time: _timeLabel(visibleRows[index]['criada_em'] as String),
+                  isUnread: visibleRows[index]['lida'] != true,
+                  onTap: () => _markRead(visibleRows[index]['id'] as String),
+                ),
+                const SizedBox(height: 12),
               ],
-            ),
-            const SizedBox(height: 12),
-
-            _buildNotificationCard(
-              icon: Icons.event_available_outlined,
-              title: 'Sua consulta está chegando',
-              description: 'Dr. Rafael Lima · Cardiologista\nAmanhã, 17 nov, às 16:30.',
-              time: 'Há 10 min',
-              isUnread: _hasUnread,
-            ),
-            const SizedBox(height: 12),
-            _buildNotificationCard(
-              icon: Icons.check_box_outlined,
-              title: 'Consulta confirmada',
-              description: 'Seu agendamento na Clínica Vida\nestá confirmado. Veja os detalhes.',
-              time: 'Há 1 hora',
-              isUnread: _hasUnread,
-            ),
-
-            if (_selectedTab == 0) ...[
-              const SizedBox(height: 24),
-              const Text('Ontem', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-              const SizedBox(height: 12),
-              _buildNotificationCard(
-                icon: Icons.description_outlined,
-                title: 'Resultado de exame disponível',
-                description: 'Seu resultado já pode ser consultado.\nAcesse para conferir.',
-                time: 'Ontem, às 14:20',
-                isUnread: false,
-              ),
-              const SizedBox(height: 12),
-              _buildNotificationCard(
-                icon: Icons.star_border_rounded,
-                title: 'Como foi sua consulta?',
-                description: 'Conte como foi seu atendimento.\nSua avaliação faz a diferença.',
-                time: 'Ontem, às 10:00',
-                isUnread: false,
-              ),
-            ],
           ],
         ),
       ),
     );
+  }
+
+  IconData _iconFor(String type) => switch (type) {
+    'consulta' => Icons.event_available_outlined,
+    'exame' => Icons.description_outlined,
+    _ => Icons.notifications_none_rounded,
+  };
+
+  String _dateGroup(String value) {
+    final date = DateTime.parse(value).toLocal();
+    final now = DateTime.now();
+    final days = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).difference(DateTime(date.year, date.month, date.day)).inDays;
+    if (days == 0) return 'Hoje';
+    if (days == 1) return 'Ontem';
+    return '${date.day.toString().padLeft(2, '0')}/'
+        '${date.month.toString().padLeft(2, '0')}/'
+        '${date.year}';
+  }
+
+  String _timeLabel(String value) {
+    final date = DateTime.parse(value).toLocal();
+    return '${date.day.toString().padLeft(2, '0')}/'
+        '${date.month.toString().padLeft(2, '0')} · '
+        '${date.hour.toString().padLeft(2, '0')}:'
+        '${date.minute.toString().padLeft(2, '0')}';
   }
 
   Widget _buildTab(int index, String label) {
@@ -136,10 +234,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
+                      color: Colors.black.withValues(alpha: 0.04),
                       blurRadius: 4,
                       offset: const Offset(0, 2),
-                    )
+                    ),
                   ]
                 : null,
           ),
@@ -163,62 +261,85 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     required String description,
     required String time,
     required bool isUnread,
+    required VoidCallback onTap,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isUnread ? AppColors.cardFill : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: isUnread ? null : Border.all(color: AppColors.borderLight),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: isUnread ? Colors.white : AppColors.cardFill,
-              borderRadius: BorderRadius.circular(14),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isUnread ? AppColors.cardFill : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: isUnread ? null : Border.all(color: AppColors.borderLight),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: isUnread ? Colors.white : AppColors.cardFill,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(
+                icon,
+                color: isUnread ? AppColors.primaryBlue : AppColors.slateText,
+              ),
             ),
-            child: Icon(icon, color: isUnread ? AppColors.primaryBlue : AppColors.slateText),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        title,
-                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.darkNavy),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.darkNavy,
+                          ),
+                        ),
                       ),
+                      if (isUnread)
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: AppColors.primaryBlue,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    description,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.slateText,
+                      height: 1.4,
                     ),
-                    if (isUnread)
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(color: AppColors.primaryBlue, shape: BoxShape.circle),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  description,
-                  style: const TextStyle(fontSize: 13, color: AppColors.slateText, height: 1.4),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  time,
-                  style: const TextStyle(fontSize: 11, color: AppColors.slateText, fontWeight: FontWeight.w500),
-                ),
-              ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    time,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.slateText,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
